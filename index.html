@@ -1934,7 +1934,7 @@ function renderPlaceMarkers() {
     el.style.top  = p.pos[1] + '%';
     layer.appendChild(el);
 
-    _attachHTMLDrag(el, p.id);
+    if (!isUitzicht) _attachHTMLDrag(el, p.id);
 
     // Hover (skip if dragging)
     el.addEventListener('mouseenter', e => { if (!ttSticky && !_dragMoved) showPhotoTT(e, p); });
@@ -1966,7 +1966,6 @@ requestAnimationFrame(() => {
   const wr = document.getElementById('windroos');
   if (wr) {
     wr.style.pointerEvents = 'all';
-    _attachHTMLDrag(wr, 'windroos');
   }
 });
 
@@ -2061,10 +2060,16 @@ function showTooltip(e, p) {
 }
 
 function moveTooltip(e) {
-  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 16;
+  const vw = (window.visualViewport ? window.visualViewport.width  : window.innerWidth);
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  const ox = window.visualViewport ? window.visualViewport.offsetLeft : 0;
+  const oy = window.visualViewport ? window.visualViewport.offsetTop  : 0;
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 12;
   let x = e.clientX + 16, y = e.clientY + 16;
-  if (x + tw + pad > window.innerWidth)  x = e.clientX - tw - 16;
-  if (y + th + pad > window.innerHeight) y = e.clientY - th - 16;
+  if (x + tw + pad > ox + vw) x = e.clientX - tw - 16;
+  if (y + th + pad > oy + vh) y = e.clientY - th - 16;
+  if (x < ox + pad) x = ox + pad;
+  if (y < oy + pad) y = oy + pad;
   tooltip.style.left = x + 'px';
   tooltip.style.top  = y + 'px';
 }
