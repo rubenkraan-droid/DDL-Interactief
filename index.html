@@ -2070,16 +2070,23 @@ function showTooltip(e, p) {
 }
 
 function moveTooltip(e) {
-  const vp = window.visualViewport;
-  const ox = vp ? vp.offsetLeft : 0;
-  const oy = vp ? vp.offsetTop  : 0;
-  const vw = vp ? vp.offsetLeft + vp.width  * (vp.scale || 1) : window.innerWidth;
-  const vh = vp ? vp.offsetTop  + vp.height * (vp.scale || 1) : window.innerHeight;
+  const vp  = window.visualViewport;
+  const visW = vp ? vp.width  : window.innerWidth;
+  const visH = vp ? vp.height : window.innerHeight;
+  const ox   = vp ? vp.offsetLeft : 0;
+  const oy   = vp ? vp.offsetTop  : 0;
+  const sc   = vp ? (vp.scale || 1) : 1;
+
+  const maxW = Math.min(280, visW - 16);
+  tooltip.style.maxWidth = maxW + 'px';
+  tooltip.style.minWidth = Math.min(220, visW - 16) + 'px';
 
   const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 12;
+  const layoutRight  = ox + visW * sc;
+  const layoutBottom = oy + visH * sc;
   let x = e.clientX + 16, y = e.clientY + 16;
-  if (x + tw + pad > vw) x = e.clientX - tw - 16;
-  if (y + th + pad > vh) y = e.clientY - th - 16;
+  if (x + tw + pad > layoutRight)  x = e.clientX - tw - 16;
+  if (y + th + pad > layoutBottom) y = e.clientY - th - 16;
   if (x < ox + pad) x = ox + pad;
   if (y < oy + pad) y = oy + pad;
   tooltip.style.left = x + 'px';
@@ -2087,6 +2094,16 @@ function moveTooltip(e) {
 }
 
 function hideTooltip() { tooltip.classList.remove('visible'); }
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (tooltip.classList.contains('visible')) {
+      const vw = window.visualViewport.width;
+      tooltip.style.maxWidth = Math.min(280, vw - 16) + 'px';
+      tooltip.style.minWidth = Math.min(220, vw - 16) + 'px';
+    }
+  });
+}
 
 
 // ─── Kavel-pad koppeling ─────────────────────────────────────────────────────
