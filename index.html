@@ -2070,17 +2070,13 @@ function showTooltip(e, p) {
 }
 
 function moveTooltip(e) {
-  const vp    = window.visualViewport;
-  const scale = vp ? vp.scale : 1;
-  const ox    = vp ? vp.offsetLeft : 0;
-  const oy    = vp ? vp.offsetTop  : 0;
-  const vw    = vp ? vp.offsetLeft + vp.width  * scale : window.innerWidth;
-  const vh    = vp ? vp.offsetTop  + vp.height * scale : window.innerHeight;
+  const vp = window.visualViewport;
+  const ox = vp ? vp.offsetLeft : 0;
+  const oy = vp ? vp.offsetTop  : 0;
+  const vw = vp ? vp.offsetLeft + vp.width  * (vp.scale || 1) : window.innerWidth;
+  const vh = vp ? vp.offsetTop  + vp.height * (vp.scale || 1) : window.innerHeight;
 
-  tooltip.style.transform       = `scale(${scale})`;
-  tooltip.style.transformOrigin = 'top left';
-
-  const tw = tooltip.offsetWidth * scale, th = tooltip.offsetHeight * scale, pad = 12;
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 12;
   let x = e.clientX + 16, y = e.clientY + 16;
   if (x + tw + pad > vw) x = e.clientX - tw - 16;
   if (y + th + pad > vh) y = e.clientY - th - 16;
