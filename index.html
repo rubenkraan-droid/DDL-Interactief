@@ -1829,16 +1829,26 @@ function showPhotoTT(e, p) {
   }
 }
 function placePhotoTT(e) {
-  const cx = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
-  const w = Math.min(520, window.innerWidth - 24);
+  const vp = window.visualViewport;
+  const vw = vp ? vp.width  : window.innerWidth;
+  const ox = vp ? vp.offsetLeft : 0;
+  const oy = vp ? vp.offsetTop  : 0;
+  const cx = e ? (e.clientX ?? (e.touches ? e.touches[0].clientX : ox + vw / 2)) : ox + vw / 2;
+  const w  = Math.min(520, vw - 16);
   let lx = cx + 16;
-  if (lx + w > window.innerWidth - 8) lx = cx - w - 16;
-  if (lx < 8) lx = 8;
-  photoTT.style.left = lx + 'px';
-  photoTT.style.top  = '8px';
+  if (lx + w > ox + vw - 8) lx = cx - w - 16;
+  if (lx < ox + 8) lx = ox + 8;
+  photoTT.style.left     = lx + 'px';
+  photoTT.style.top      = (oy + 8) + 'px';
   photoTT.style.maxWidth = w + 'px';
 }
 function hidePhotoTT() { _clearSlide(); photoTT.classList.remove('visible'); ttSticky = false; }
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (photoTT.classList.contains('visible')) placePhotoTT(null);
+  });
+}
 
 document.addEventListener('click', () => { if (!ttSticky) hidePhotoTT(); });
 
