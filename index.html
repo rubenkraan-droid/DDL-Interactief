@@ -2,355 +2,367 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Domaine de Lanzac — Interactieve Kaart</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#164631">
+<title>Domaine de Lanzac | Parkplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg:      #ebe6db;
+    --surface: #f7f4ee;
+    --ink:     #1d3527;
+    --ink-2:   #5d6b61;
+    --line:    rgba(29, 53, 39, .12);
+    --forest:  #164631;
+    --gold:    #c9a84c;
+
+    /* statuskleuren: kaartvlakken (zacht) en stippen/labels (verzadigd) */
+    --f-available: #86c497;  --c-available: #2f8a4e;
+    --f-under-bid: #ecb563;  --c-under-bid: #c77d17;
+    --f-sold:      #d9968a;  --c-sold:      #b24a3c;
+
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(29,53,39,.06), 0 8px 28px rgba(29,53,39,.10);
+    --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #1a1a2e;
-    color: #eee;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    -webkit-font-smoothing: antialiased;
   }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
 
-  header {
-    width: 100%;
-    background: #0f3460;
-    padding: 14px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 12px rgba(0,0,0,.4);
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+  .page { max-width: 1440px; margin: 0 auto; padding: 0 20px 40px; }
 
-  header h1 { font-size: 1.3rem; font-weight: 600; color: #fff; }
-  header p  { font-size: .8rem; color: #aac4e4; margin-top: 2px; }
+  /* ── Kop ── */
+  .top {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    padding: 22px 0 14px;
+  }
+  .eyebrow {
+    display: block; font-size: .72rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 2px;
+  }
+  .top h1 { font-size: clamp(1.45rem, 2.6vw, 2rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; color: var(--forest); }
+  .top .sub { font-size: .84rem; color: var(--ink-2); margin-top: 4px; }
 
-  .header-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: 10px; font-weight: 700; font-size: .9rem; text-decoration: none;
+    padding: 10px 16px; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+    transition: background .15s, transform .1s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--forest); color: #fff; }
+  .btn-primary:hover { background: #0f3726; }
+  .btn-ghost { background: transparent; color: var(--forest); border-color: var(--line); }
+  .btn-ghost:hover { background: rgba(22,70,49,.06); }
 
-  .legend { display: flex; gap: 16px; align-items: center; }
-  .legend-item { display: flex; align-items: center; gap: 7px; font-size: .82rem; color: #cce; }
-  .legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); flex-shrink: 0; }
+  /* ── Statusbalk met filterchips ── */
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 0 0 14px; flex-wrap: wrap;
+  }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px 7px 11px; font-size: .86rem; color: var(--ink-2); cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s;
+  }
+  .chip strong { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .chip[data-filter="available"] .dot { background: var(--c-available); }
+  .chip[data-filter="under-bid"] .dot { background: var(--c-under-bid); }
+  .chip[data-filter="sold"]      .dot { background: var(--c-sold); }
+  .chip:hover { border-color: rgba(29,53,39,.28); }
+  .chip[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: rgba(255,255,255,.85); }
+  .chip[aria-pressed="true"] strong { color: #fff; }
+  .chips.filtering .chip[aria-pressed="false"] { opacity: .6; }
 
-  /* Sheet sync bar */
-  #sheetBar {
-    width: 100%;
-    background: rgba(255,255,255,.04);
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    padding: 7px 20px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-size: .8rem;
-    color: #aac;
+  .sync { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--ink-2); }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); cursor: pointer; display: grid; place-items: center; color: var(--ink-2);
   }
-  #sheetStatus { flex: 1; }
-  #refreshBtn {
-    background: rgba(255,255,255,.1);
-    color: #cce;
-    border: 1px solid rgba(255,255,255,.15);
-    padding: 4px 12px;
-    border-radius: 5px;
-    font-size: .8rem;
-    cursor: pointer;
-  }
-  #refreshBtn:hover { background: rgba(255,255,255,.18); }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn.spinning svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Edit mode toggle */
-  #editBtn {
-    background: #e67e22;
-    color: #fff;
-    border: none;
-    padding: 7px 16px;
-    border-radius: 6px;
-    font-size: .85rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
+  .error-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: #fbe9e5; border: 1px solid #efc3ba; color: #7c2d22;
+    border-radius: 10px; padding: 10px 14px; font-size: .86rem; margin-bottom: 14px;
   }
-  #editBtn.active { background: #27ae60; }
+  .error-banner[hidden] { display: none; }
 
-  .stats {
-    background: rgba(255,255,255,.06);
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-    padding: 10px 24px;
-    font-size: .82rem;
-    color: #aac;
+  /* ── Kaart ── */
+  .map-card {
+    position: relative; background: #f1ece3; border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
   }
-  .stats span strong { color: #fff; font-size: 1rem; }
+  .map-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .map-wrapper { position: relative; width: 100%; min-width: 1040px; }
+  svg#mapSVG { display: block; width: 100%; height: auto; }
 
-  /* Edit mode info bar */
-  #editBar {
-    display: none;
-    width: 100%;
-    background: #1a3a1a;
-    border-bottom: 1px solid #27ae60;
-    padding: 10px 20px;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-    font-size: .85rem;
-    color: #aed6a0;
-  }
-  #editBar.visible { display: flex; }
-  #editBar strong { color: #fff; }
-  #editBar code { background: rgba(255,255,255,.1); padding: 2px 6px; border-radius: 4px; font-size: .8rem; color: #cfc; }
-  #copyBtn {
-    background: #27ae60; color: #fff; border: none;
-    padding: 6px 14px; border-radius: 5px; font-size: .82rem;
-    font-weight: 600; cursor: pointer; margin-left: auto;
-  }
-  #copyBtn:active { background: #1e8449; }
-  #copyMsg { color: #a8e6b4; font-size: .8rem; display: none; }
+  /* Alleen kavelvlakken en voorzieningen reageren op klikken; labels en bomen erboven
+     laten klikken door naar het vlak eronder */
+  svg#mapSVG * { pointer-events: none; }
+  svg#mapSVG [data-poi], svg#mapSVG [data-poi] * { pointer-events: visiblePainted; }
+  svg#mapSVG .kavel-pad { transition: fill .2s, opacity .2s; }
+  svg#mapSVG .kavel-pad.is-live { pointer-events: all; cursor: pointer; }
+  svg#mapSVG .kavel-pad.s-available { fill: var(--f-available); }
+  svg#mapSVG .kavel-pad.s-under-bid { fill: var(--f-under-bid); }
+  svg#mapSVG .kavel-pad.s-sold      { fill: var(--f-sold); }
+  svg#mapSVG .kavel-pad.is-live:hover { stroke: var(--ink); stroke-width: 2; }
+  svg#mapSVG .kavel-pad.dim { opacity: .22; }
+  svg#mapSVG .kavel-pad.is-selected { stroke: var(--ink); stroke-width: 3.5; opacity: 1; }
+  svg#mapSVG .kavel-pad.flash { animation: flash 1.2s ease 2; }
+  @keyframes flash { 50% { stroke: var(--forest); stroke-width: 6; } }
 
-    .map-wrapper {
-    position: relative;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 40px rgba(0,0,0,.6);
-  }
-  .map-wrapper svg#mapSVG {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  svg#mapSVG .kavel-pad { transition: fill .2s, opacity .2s; pointer-events: none; }
   svg#mapSVG.koppelen-mode .kavel-pad { cursor: pointer; pointer-events: all; }
   svg#mapSVG.koppelen-mode .kavel-pad:hover { stroke: #ffe066; stroke-width: 3; }
-  .koppel-label { pointer-events: none; font-family: sans-serif; font-weight: 700; }
+  svg#mapSVG .kavel-pad.kavel-selected { stroke:#ffe066 !important; stroke-width:3 !important; opacity:1 !important; }
+  svg#mapSVG [data-poi] { cursor: pointer; }
+  svg#mapSVG [data-poi]:hover { filter: brightness(1.25); }
 
-  .markers-layer { position: absolute; inset: 0; }
-  .markers-layer.koppelen-door { pointer-events: none; }
+  .markers-layer { position: absolute; inset: 0; pointer-events: none; }
+  .markers-layer > * { pointer-events: auto; }
+  .markers-layer.koppelen-door > * { pointer-events: none; }
 
+  /* Losse kavelpin (alleen voor kavels zonder vlak op de kaart) */
   .marker {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    border: 2.5px solid rgba(255,255,255,.7);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 700; color: #fff;
-    cursor: pointer;
-    transition: transform .1s, box-shadow .1s;
-    box-shadow: 0 2px 6px rgba(0,0,0,.5);
-    z-index: 10;
-    text-shadow: 0 1px 2px rgba(0,0,0,.6);
-    user-select: none;
+    position: absolute; transform: translate(-50%, -50%);
+    min-width: 24px; height: 24px; padding: 0 4px; border-radius: 12px;
+    border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: #fff; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3); z-index: 10; user-select: none;
   }
-  .marker:hover { transform: translate(-50%,-50%) scale(1.35); z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,.7); }
+  .marker.available { background: var(--c-available); }
+  .marker.under-bid { background: var(--c-under-bid); }
+  .marker.sold      { background: var(--c-sold); }
 
-  @media (max-width: 768px) {
-    .marker {
-      width: 16px; height: 16px;
-      font-size: 5px;
-      border-width: 1.5px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.5);
-    }
-    .marker:hover { transform: translate(-50%,-50%) scale(1.2); }
+  /* Uitzicht-knoppen: binnen de kaartrand, per rand verankerd */
+  .view-pin {
+    position: absolute; z-index: 15;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(22,70,49,.92); color: #fff;
+    border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+    padding: 6px 12px 6px 9px; font-size: 12px; font-weight: 700; letter-spacing: .01em;
+    white-space: nowrap; cursor: pointer; user-select: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,.25);
+    transition: background .15s, scale .15s;
   }
+  .view-pin:hover { background: var(--forest); scale: 1.05; }
+  .view-pin svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .view-pin.edge-top    { top: 1.6%;  left: 50%;  translate: -50% 0; }
+  .view-pin.edge-bottom { bottom: 1.6%; left: 50%; translate: -50% 0; }
+  .view-pin.edge-left   { left: 1%;  top: 50%;  translate: 0 -50%; }
+  .view-pin.edge-right  { right: 1%; top: 36%;  translate: 0 -50%; }
 
-  /* ── Locatiepins ── */
-  .place-marker {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    background: rgba(15,30,50,.72);
-    backdrop-filter: blur(4px);
-    color: #fff;
-    border: 1.5px solid rgba(255,255,255,.35);
-    border-radius: 20px;
-    padding: 2px 6px 2px 4px;
-    font-size: 9px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    z-index: 15;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: background .15s, transform .15s, box-shadow .15s;
-    user-select: none;
-    letter-spacing: .01em;
-  }
-  .place-marker:hover {
-    background: rgba(15,30,50,.92);
-    transform: translate(-50%,-50%) scale(1.07);
-    box-shadow: 0 3px 12px rgba(0,0,0,.6);
-  }
-  .place-marker.has-photo { border-color: rgba(255,255,255,.6); }
-  .pm-icon { width: 11px; height: 11px; flex-shrink: 0; display: block; }
+  #windroos { position: absolute; left: 68.4%; top: 5.9%; width: 6.4%; z-index: 5; pointer-events: none; }
+  #windroos svg { display: block; width: 100%; height: auto; }
 
-  /* Round uitzicht button */
-  .place-marker.uitzicht-btn {
-    border-radius: 50%;
-    width: 56px; height: 56px;
-    padding: 0;
-    flex-direction: column;
-    justify-content: center;
-    gap: 3px;
-    font-size: 8.5px;
-    font-weight: 700;
-    text-align: center;
-    background: rgba(10, 35, 10, 0.78);
-    border: 2px solid rgba(255,255,255,.55);
-    white-space: normal;
-    line-height: 1.15;
-    letter-spacing: .03em;
+  .map-hint {
+    position: absolute; left: 50%; bottom: 12px; translate: -50% 0; z-index: 30;
+    background: rgba(29,53,39,.85); color: #fff; font-size: .78rem; font-weight: 600;
+    padding: 7px 12px; border-radius: 999px; pointer-events: none;
+    display: none; align-items: center; gap: 6px; transition: opacity .4s;
   }
-  .place-marker.uitzicht-btn .pm-icon { width: 18px; height: 18px; }
-  .place-marker.uitzicht-btn:hover {
-    background: rgba(10,35,10,.95);
-    transform: translate(-50%,-50%) scale(1.1);
-    box-shadow: 0 4px 16px rgba(0,0,0,.65);
-  }
-  .place-marker.dragging { cursor: grabbing !important; opacity: .85; }
+  .map-hint.show { display: inline-flex; }
+  .map-hint.gone { opacity: 0; }
 
-  /* ── Foto-tooltip ── */
-  .photo-tt {
-    position: fixed;
-    background: #111;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,.75);
-    z-index: 2000;
-    width: 520px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity .18s;
-  }
-  .photo-tt.visible { opacity: 1; }
-  .photo-tt img { width: 100%; display: block; height: auto; max-height: calc(100vh - 60px); object-fit: contain; }
-  .photo-tt .pt-label {
-    padding: 7px 11px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #fff;
-    background: #111;
-  }
-  .photo-tt .pt-label-only { padding: 12px 16px; font-size: 13px; }
-  .pt-count {
-    position: absolute; bottom: 7px; right: 9px;
-    background: rgba(0,0,0,.55); color: #fff;
-    font-size: 11px; font-weight: 600;
-    padding: 2px 7px; border-radius: 10px;
-    pointer-events: none;
-  }
-  .photo-tt .pt-cycle { cursor: pointer; display: block; position: relative; }
-
-  @media (max-width: 768px) {
-    .place-marker { font-size: 7.5px; padding: 1px 5px 1px 3px; }
-    .pm-icon { width: 9px; height: 9px; }
-    .photo-tt { width: calc(100vw - 24px); }
-    .photo-tt img { max-height: 200px; }
-    #windroos svg { width: 68px !important; height: 68px !important; }
-  }
-  .marker.available { background: #27ae60; }
-  .marker.sold      { background: #c0392b; opacity: .8; }
-  .marker.under-bid { background: #e67e22; }
-
-  /* Edit mode marker styles */
-  body.edit-mode .marker {
-    cursor: grab;
-    opacity: 1 !important;
-    border-color: #fff;
-  }
-  body.edit-mode .marker:hover {
-    transform: translate(-50%,-50%) scale(1.5);
-    box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 4px 16px rgba(0,0,0,.7);
-  }
-  body.edit-mode .marker.dragging {
-    cursor: grabbing;
-    transform: translate(-50%,-50%) scale(1.6);
-    z-index: 999;
-    box-shadow: 0 0 0 4px #fff, 0 6px 20px rgba(0,0,0,.8);
-    transition: none;
-  }
-
-  /* Coordinate readout in edit mode */
-  #coordReadout {
-    position: fixed;
-    bottom: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,.85);
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 20px;
-    font-size: .85rem;
-    font-family: monospace;
-    pointer-events: none;
-    display: none;
-    z-index: 9999;
-    border: 1px solid rgba(255,255,255,.2);
-  }
-
-  /* Tooltip */
+  /* ── Hover-tooltip (alleen met muis) ── */
   .tooltip {
-    position: fixed;
-    background: rgba(10,20,40,.97);
-    border: 1px solid rgba(100,160,255,.3);
-    border-radius: 10px;
-    padding: 13px 16px;
-    min-width: 220px; max-width: 280px;
-    pointer-events: none;
-    z-index: 9999;
-    display: none;
-    box-shadow: 0 8px 30px rgba(0,0,0,.6);
+    position: fixed; z-index: 900; pointer-events: none; display: none;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; min-width: 200px; max-width: 260px;
+    box-shadow: var(--shadow);
   }
   .tooltip.visible { display: block; }
-  .tooltip-nr { font-size: .72rem; color: #7aacdd; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
-  .tooltip-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
-  .tooltip-status { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
-  .tooltip-status.available { background: #27ae60; color: #fff; }
-  .tooltip-status.sold      { background: #c0392b; color: #fff; }
-  .tooltip-status.under-bid { background: #e67e22; color: #fff; }
-  .tooltip-price { font-size: 1.2rem; font-weight: 700; color: #a8dfaa; margin-bottom: 8px; }
-  .tooltip-row { display: flex; gap: 8px; font-size: .8rem; color: #bbd; margin-bottom: 3px; align-items: flex-start; }
-  .tooltip-row .label { color: #7aacdd; min-width: 70px; flex-shrink: 0; }
-  .tooltip-divider { border: none; border-top: 1px solid rgba(255,255,255,.1); margin: 8px 0; }
+  .tt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .tt-nr { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+  .tt-name { font-size: 1rem; font-weight: 800; line-height: 1.2; }
+  .tt-price { font-size: 1.1rem; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tt-hint { font-size: .74rem; color: var(--ink-2); margin-top: 6px; }
 
-  svg#mapSVG.koppelen-mode .kavel-pad { cursor: pointer; pointer-events: all; }
-  svg#mapSVG .kavel-pad.kavel-selected { stroke:#ffe066 !important; stroke-width:3 !important; opacity:1 !important; }
-  .markers-layer.koppelen-door { pointer-events: none; }
-  .kavel-nr-label { font-family:sans-serif; font-size:18px; font-weight:700;
-    fill:#fff; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.5); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 800;
+    letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.available { background: rgba(47,138,78,.13);  color: var(--c-available); }
+  .pill.under-bid { background: rgba(199,125,23,.14); color: var(--c-under-bid); }
+  .pill.sold      { background: rgba(178,74,60,.12);  color: var(--c-sold); }
 
+  /* ── Kavelpaneel (tik/klik) ── */
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(15,30,22,.28); z-index: 950;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .sheet {
+    position: fixed; z-index: 1000; background: var(--surface); color: var(--ink);
+    left: 0; right: 0; bottom: 0;
+    border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.18);
+    padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .25s ease;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .sheet.open { transform: none; }
+  .sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: rgba(29,53,39,.18); margin: 0 auto 12px; }
+  .sheet-close {
+    position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%;
+    border: none; background: rgba(29,53,39,.07); cursor: pointer; font-size: 20px; line-height: 1; color: var(--ink-2);
+  }
+  .sheet-close:hover { background: rgba(29,53,39,.13); color: var(--ink); }
+  .sh-nr { font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .sh-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; margin: 2px 40px 8px 0; line-height: 1.2; }
+  .sh-price { font-size: 1.6rem; font-weight: 800; margin: 12px 0 4px; font-variant-numeric: tabular-nums; color: var(--forest); }
+  .sh-price.muted { color: var(--ink-2); font-size: 1.15rem; }
+  .sh-rows { margin: 12px 0 16px; border-top: 1px solid var(--line); }
+  .sh-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+  .sh-row span:first-child { color: var(--ink-2); }
+  .sh-row span:last-child { font-weight: 700; text-align: right; }
+  .sh-actions { display: flex; gap: 8px; }
+  .sh-actions .btn { flex: 1; }
+
+  /* ── Fotovenster voor uitzicht en voorzieningen ── */
+  .photo-tt {
+    position: fixed; z-index: 980; width: 440px; pointer-events: none;
+    background: var(--surface); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,.28); opacity: 0; transition: opacity .18s;
+  }
+  .photo-tt.visible { opacity: 1; }
+  .photo-tt img { width: 100%; display: block; height: auto; max-height: calc(100vh - 120px); object-fit: cover; background: #ddd6c8; aspect-ratio: 4 / 3; }
+  .photo-tt .pt-label { padding: 10px 14px; font-size: .9rem; font-weight: 700; color: var(--ink); display: flex; justify-content: space-between; gap: 10px; }
+  .photo-tt .pt-count { font-weight: 600; color: var(--ink-2); font-size: .8rem; }
+
+  /* ── Kavellijst ── */
+  .lots { margin-top: 28px; }
+  .lots-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .lots-head h2 { font-size: 1.15rem; font-weight: 800; color: var(--forest); }
+  .lots-head span { font-size: .84rem; color: var(--ink-2); }
+  .lots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .lot {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+    text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px 12px 12px; cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .lot::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .lot.available::before { background: var(--c-available); }
+  .lot.under-bid::before { background: var(--c-under-bid); }
+  .lot.sold::before      { background: var(--c-sold); }
+  .lot:hover { border-color: rgba(29,53,39,.3); box-shadow: 0 4px 14px rgba(29,53,39,.08); }
+  .lot.sold { background: transparent; }
+  .lot.sold .lot-nr, .lot.sold .lot-name { color: var(--ink-2); }
+  .lot-nr {
+    width: 38px; height: 38px; border-radius: 10px; background: rgba(22,70,49,.07);
+    display: grid; place-items: center; font-weight: 800; font-size: .95rem; color: var(--forest);
+    font-variant-numeric: tabular-nums;
+  }
+  .lot-main { min-width: 0; }
+  .lot-name { display: block; font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lot-meta { display: block; font-size: .78rem; color: var(--ink-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lot-price { font-weight: 800; font-size: .92rem; font-variant-numeric: tabular-nums; text-align: right; }
+  .lot.under-bid .lot-price { color: var(--c-under-bid); font-size: .8rem; }
+  .lot.sold .lot-price { color: var(--c-sold); font-size: .8rem; }
+  .lots-more { margin: 14px auto 0; display: flex; }
+  .lots-more[hidden] { display: none; }
+  .lots-empty { color: var(--ink-2); font-size: .9rem; padding: 18px 0; }
+
+  .foot { margin-top: 28px; font-size: .76rem; color: var(--ink-2); text-align: center; }
+
+  /* Beheerknoppen, alleen zichtbaar met ?bewerk in de URL */
+  .admin-only { display: none !important; }
+  body.admin .admin-only { display: inline-flex !important; }
+
+  /* ── Desktop ── */
+  @media (min-width: 900px) {
+    .sheet {
+      left: auto; right: 24px; bottom: 24px; width: 360px;
+      border-radius: 16px; box-shadow: var(--shadow), 0 20px 50px rgba(0,0,0,.15);
+      transform: translateY(20px); opacity: 0; pointer-events: none;
+      transition: transform .2s ease, opacity .2s ease; padding: 20px;
+    }
+    .sheet.open { transform: none; opacity: 1; pointer-events: auto; }
+    .sheet.left { right: auto; left: 24px; }
+    .sheet-grip { display: none; }
+  }
+
+  /* ── Mobiel ── */
+  @media (max-width: 899px) {
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+  }
+  @media (max-width: 640px) {
+    .page { padding: 0 14px 32px; }
+    .top { padding: 16px 0 12px; align-items: center; }
+    .top .sub { font-size: .78rem; }
+    .btn-primary.top-cta { padding: 9px 13px; font-size: .84rem; }
+    .statusbar { gap: 8px; }
+    .chips { gap: 6px; width: 100%; flex-wrap: nowrap; }
+    .chip { flex: 1; justify-content: center; padding: 8px 6px; font-size: .78rem; gap: 5px; flex-direction: column; border-radius: 12px; }
+    .chip .dot { display: none; }
+    .chip strong { font-size: 1.05rem; display: flex; align-items: center; gap: 5px; }
+    .chip strong::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+    .chip[data-filter="available"] strong::before { background: var(--c-available); }
+    .chip[data-filter="under-bid"] strong::before { background: var(--c-under-bid); }
+    .chip[data-filter="sold"]      strong::before { background: var(--c-sold); }
+    .sync { width: 100%; justify-content: flex-end; margin-top: -2px; }
+    .map-card { margin: 0 -14px; border-radius: 0; }
+    .photo-tt { left: 12px !important; right: 12px; top: auto !important; bottom: calc(12px + env(safe-area-inset-bottom)); width: auto; max-width: none !important; }
+    .photo-tt img { max-height: 46vh; }
+    .lots-grid { grid-template-columns: 1fr; gap: 8px; }
+    .lot { padding: 10px 12px 10px 12px; }
+    .lot-nr { width: 34px; height: 34px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
+<div class="page">
 
-<header>
+<header class="top">
   <div>
-    <h1>Domaine de Lanzac &mdash; Parkplan</h1>
-    <p>Prijslijst geldig tot 31 oktober 2026 &nbsp;|&nbsp; Datum: 1 april 2026</p>
+    <span class="eyebrow">Parkplan</span>
+    <h1>Domaine de Lanzac</h1>
+    <p class="sub">Prijslijst geldig tot 31 oktober 2026 · peildatum 1 april 2026</p>
   </div>
-  <div class="header-right">
-    <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#27ae60"></div> Beschikbaar</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div> Onder bod</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div> Verkocht</div>
-    </div>
-    
-    <a href="https://rubenkraan-droid.github.io/DDL-Prijslijst/" target="_blank" style="background:#2c4a2e;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;">Prijslijst</a>
-  </div>
+  <a class="btn btn-primary top-cta" href="https://rubenkraan-droid.github.io/DDL-Prijslijst/" target="_blank" rel="noopener">Prijslijst</a>
 </header>
 
-<div class="stats" id="stats"></div>
-
-<div id="sheetBar">
-  <span id="sheetStatus">⏳ Data laden…</span>
-  <button id="refreshBtn" onclick="loadFromWebhook()" title="Herlaad data uit webhook">↻ Vernieuwen</button>
+<div class="statusbar">
+  <div class="chips" id="chips" role="group" aria-label="Filter op status">
+    <button class="chip" data-filter="available" aria-pressed="false"><span class="dot"></span><strong id="c-available">…</strong><span>beschikbaar</span></button>
+    <button class="chip" data-filter="under-bid" aria-pressed="false"><span class="dot"></span><strong id="c-under-bid">…</strong><span>onder bod</span></button>
+    <button class="chip" data-filter="sold" aria-pressed="false"><span class="dot"></span><strong id="c-sold">…</strong><span>verkocht</span></button>
+  </div>
+  <div class="sync">
+    <button class="btn btn-ghost admin-only" id="koppelenBtn" onclick="toggleKoppelen()" style="padding:5px 10px;font-size:.78rem">Kavels koppelen</button>
+    <span id="sheetStatus">Beschikbaarheid laden</span>
+    <button class="icon-btn" id="refreshBtn" onclick="loadFromWebhook()" aria-label="Beschikbaarheid vernieuwen" title="Vernieuwen">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+    </button>
+  </div>
 </div>
 
+<div class="error-banner" id="errorBanner" hidden>
+  <span>De actuele beschikbaarheid kon niet worden geladen. Controleer de verbinding en probeer het opnieuw.</span>
+  <button class="btn btn-ghost" onclick="loadFromWebhook()" style="padding:6px 12px;font-size:.82rem">Opnieuw</button>
+</div>
 
+<div class="map-card">
+<div class="map-scroll" id="mapScroll">
 <div class="map-wrapper" id="mapWrapper">
   <svg id="mapSVG" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1672 941">
   <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
@@ -1457,46 +1469,64 @@
   </g>
 </svg>
   <div class="markers-layer" id="markersLayer"></div>
-  <div id="windroos" style="position:absolute;left:68.4287%;top:5.94033%;z-index:20;pointer-events:none;">
-    <svg viewBox="0 0 100 100" width="112" height="112" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="47" fill="rgba(10,22,12,0.68)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-      <!-- Diagonal tick marks -->
+  <div id="windroos" aria-hidden="true">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="47" fill="rgba(22,70,49,0.82)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
       <g stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round">
-        <line x1="22" y1="22" x2="27" y2="27"/>
-        <line x1="78" y1="22" x2="73" y2="27"/>
-        <line x1="22" y1="78" x2="27" y2="73"/>
-        <line x1="78" y1="78" x2="73" y2="73"/>
+        <line x1="22" y1="22" x2="27" y2="27"/><line x1="78" y1="22" x2="73" y2="27"/>
+        <line x1="22" y1="78" x2="27" y2="73"/><line x1="78" y1="78" x2="73" y2="73"/>
       </g>
-      <!-- W top – bright/primary -->
-      <polygon points="50,9 46,40 50,35 54,40" fill="white"/>
-      <!-- O bottom -->
-      <polygon points="50,91 54,60 50,65 46,60" fill="rgba(255,255,255,0.38)"/>
-      <!-- N right -->
-      <polygon points="91,50 60,46 65,50 60,54" fill="rgba(255,255,255,0.38)"/>
-      <!-- Z left -->
-      <polygon points="9,50 40,54 35,50 40,46" fill="rgba(255,255,255,0.38)"/>
-      <!-- Center -->
-      <circle cx="50" cy="50" r="7" fill="rgba(10,22,12,0.9)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
-      <circle cx="50" cy="50" r="2.5" fill="white"/>
-      <!-- Labels -->
-      <text x="50" y="8" text-anchor="middle" dominant-baseline="middle" font-family="'Segoe UI',sans-serif" font-size="13" font-weight="700" fill="white">W</text>
-      <text x="50" y="95" text-anchor="middle" dominant-baseline="middle" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.6)">O</text>
-      <text x="95" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.6)">N</text>
-      <text x="6" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.6)">Z</text>
+      <polygon points="50,14 46,40 50,35 54,40" fill="#c9a84c"/>
+      <polygon points="50,86 54,60 50,65 46,60" fill="rgba(255,255,255,0.45)"/>
+      <polygon points="86,50 60,46 65,50 60,54" fill="rgba(255,255,255,0.45)"/>
+      <polygon points="14,50 40,54 35,50 40,46" fill="rgba(255,255,255,0.45)"/>
+      <circle cx="50" cy="50" r="6" fill="#164631" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <circle cx="50" cy="50" r="2.2" fill="white"/>
+      <text x="50" y="9.5" text-anchor="middle" dominant-baseline="middle" font-family="Manrope,sans-serif" font-size="11" font-weight="800" fill="#c9a84c">W</text>
+      <text x="50" y="91.5" text-anchor="middle" dominant-baseline="middle" font-family="Manrope,sans-serif" font-size="10" font-weight="700" fill="rgba(255,255,255,0.75)">O</text>
+      <text x="91.5" y="50.5" text-anchor="middle" dominant-baseline="middle" font-family="Manrope,sans-serif" font-size="10" font-weight="700" fill="rgba(255,255,255,0.75)">N</text>
+      <text x="8.5" y="50.5" text-anchor="middle" dominant-baseline="middle" font-family="Manrope,sans-serif" font-size="10" font-weight="700" fill="rgba(255,255,255,0.75)">Z</text>
     </svg>
   </div>
 </div>
+</div>
+<div class="map-hint" id="mapHint">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>
+  Veeg om de hele kaart te zien
+</div>
+</div>
 
-<div class="tooltip" id="tooltip"></div>
-<div id="coordReadout"></div>
+<section class="lots" aria-labelledby="lotsTitle">
+  <div class="lots-head">
+    <h2 id="lotsTitle">Kavels</h2>
+    <span id="lotsCount"></span>
+  </div>
+  <div class="lots-grid" id="lotsGrid"></div>
+  <button class="btn btn-ghost lots-more" id="lotsMore" hidden onclick="showSold = !showSold; renderList()"></button>
+</section>
+
+<p class="foot">Beschikbaarheid wordt automatisch bijgewerkt. Aan dit overzicht kunnen geen rechten worden ontleend.</p>
+
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-labelledby="shTitle" aria-hidden="true">
+  <div class="sheet-grip"></div>
+  <button class="sheet-close" id="sheetClose" aria-label="Sluiten">×</button>
+  <div id="sheetBody"></div>
+</div>
 
 <script>
-// ─── Paste your published Google Sheet CSV URL here ──────────────────────────
-// Steps: Bestand → Delen → Publiceren op het web → Blad1 → CSV → Publiceren
-// Vervang de URL hieronder door jouw eigen link.
+// ─── Databron: n8n-webhook die de kavelregels als JSON teruggeeft ─────────────
 const WEBHOOK_URL = 'https://mabekra.app.n8n.cloud/webhook/3299481f-43c8-4e7e-b034-23a363ba8396';
+const PRIJSLIJST_URL = 'https://rubenkraan-droid.github.io/DDL-Prijslijst/';
 
-// ─── Pin positions (geometric — edit via ✏️ button) ──────────────────────────
+// Beheermodus: voeg ?bewerk toe aan de URL voor koppelen en verslepen van labels
+const ADMIN = new URLSearchParams(location.search).has('bewerk');
+if (ADMIN) document.body.classList.add('admin');
+
+// ─── Reservepinnen voor kavels zonder vlak op de kaart (x%, y%) ──────────────
 const positions = {
    1: [56.47, 36.94],  2: [59.15, 37.05],  3: [61.88, 37.11],
    4: [64.02, 37.65],  5: [65.95, 37.77],  6: [67.80, 38.12],
@@ -1516,812 +1546,592 @@ const positions = {
   46: [36.65, 38.48], 48: [43.03, 43.35], 49: [44.46, 41.45],
 };
 
-// ─── Map webhook JSON row → property object ───────────────────────────────────
+// ─── Koppeling kaartvlak (path-idx) → kavelnummer ────────────────────────────
+const KOPPELING_DEFAULT = {"0":53,"1":52,"2":51,"3":48,"4":32,"5":33,"6":34,"7":35,"8":36,"9":37,"11":38,"12":39,"13":40,"14":41,"15":42,"16":43,"17":44,"18":45,"19":46,"21":1,"22":2,"23":3,"24":4,"25":5,"26":6,"27":7,"28":8,"29":9,"30":10,"31":11,"32":12,"33":13,"34":27,"35":28,"36":26,"37":25,"38":24,"39":23,"40":22,"41":21,"42":20,"43":19,"44":18,"46":17,"47":16,"48":15,"49":14,"50":47,"51":29,"52":30,"53":31,"54":50,"55":49};
+// Een lokaal aangepaste koppeling (uit de koppelmodus) telt alleen in beheermodus,
+// zodat bezoekers altijd de ingebakken standaard zien.
+let kavelKoppeling = KOPPELING_DEFAULT;
+if (ADMIN) {
+  try { kavelKoppeling = JSON.parse(localStorage.getItem('kavelKoppeling')) || KOPPELING_DEFAULT; } catch (e) {}
+}
+
+// ─── Webhookregel → kavelobject ──────────────────────────────────────────────
 function rowToProperty(row) {
   const nr = parseInt(row['kavelnummer']);
   if (!nr) return null;
-  // Kavels zonder positie worden alsnog geladen — ze krijgen een pad-koppeling
-  // en hebben geen losse pin nodig.
-  const pos = positions[nr] || null;
-
   const rawStatus = (row['status'] || '').toLowerCase().replace(/\s+/g, '');
   let status = 'sold';
   if (rawStatus.includes('beschikbaar') || rawStatus.includes('nieuwbouw')) status = 'available';
   else if (rawStatus.includes('bod') || rawStatus.includes('bid'))          status = 'under-bid';
-
   return {
-    nr,
-    status,
-    name:    row['naam']      || null,
-    type:    row['type']      || null,
-    persons: row['personen']  || null,
+    nr, status,
+    name:      row['naam']      || null,
+    type:      row['type']      || null,
+    persons:   row['personen']  || null,
     situering: row['situering'] || null,
     rendement: row['rendement'] || null,
-    price:   row['prijs'] ? parseFloat(row['prijs']) : null,
-    pos,
+    price:     row['prijs'] ? parseFloat(row['prijs']) : null,
+    pos:       positions[nr] || null,
   };
 }
 
 let properties = [];
+let activeFilter = null;   // null | 'available' | 'under-bid' | 'sold'
+let selectedNr = null;
+let koppelenMode = false;
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const svg      = document.getElementById('mapSVG');
 const layer    = document.getElementById('markersLayer');
 const tooltip  = document.getElementById('tooltip');
-const editBar  = document.getElementById('editBar');
-const liveCoord= document.getElementById('liveCoord');
-const coordRO  = document.getElementById('coordReadout');
-const editBtn  = document.getElementById('editBtn');
-let editMode   = false;
+const mapScroll= document.getElementById('mapScroll');
+const HAS_HOVER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+const STATUS_ORDER = { available: 0, 'under-bid': 1, sold: 2 };
 
-function fmt(n) { return n.toFixed(2); }
-function formatPrice(p) { return '€ ' + p.toLocaleString('nl-NL'); }
-function statusLabel(s) {
-  return { available:'Beschikbaar', sold:'Verkocht', 'under-bid':'Onder bod' }[s] || s;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function formatPrice(p) { return '€ ' + Math.round(p).toLocaleString('nl-NL'); }
+function statusLabel(s) { return { available:'Beschikbaar', sold:'Verkocht', 'under-bid':'Onder bod' }[s] || s; }
+function propByNr(nr) { return properties.find(q => q.nr === nr) || null; }
+function pathForNr(nr) {
+  const idx = Object.keys(kavelKoppeling).find(k => kavelKoppeling[k] === nr);
+  return idx !== undefined ? svg.querySelector(`.kavel-pad[data-path-idx="${idx}"]`) : null;
+}
+function lotTitle(p) { return p.name || 'Kavel ' + p.nr; }
+function lotMeta(p) {
+  return [p.type, p.persons ? p.persons + ' pers.' : null].filter(Boolean).join(' · ');
 }
 
-// ─── Render: build/refresh all markers and stats ──────────────────────────────
+// ─── Weergave ────────────────────────────────────────────────────────────────
 function render() {
-  layer.innerHTML = '';
-  renderPlaceMarkers();
   const counts = { available: 0, 'under-bid': 0, sold: 0 };
   properties.forEach(p => counts[p.status]++);
-  document.getElementById('stats').innerHTML = `
-    <span><strong>${counts.available}</strong> beschikbaar</span>
-    <span><strong>${counts['under-bid']}</strong> onder bod</span>
-    <span><strong>${counts.sold}</strong> verkocht</span>
-    <span><strong>${properties.length}</strong> totaal</span>
-  `;
+  Object.keys(counts).forEach(k => document.getElementById('c-' + k).textContent = counts[k]);
 
-  // Bouw omgekeerde map: kavelnr → path-idx
-  const nrToIdx = {};
-  Object.entries(kavelKoppeling).forEach(([idx, nr]) => { nrToIdx[nr] = idx; });
+  paintPaths();
+  renderPins();
+  renderList();
+}
 
+function paintPaths() {
+  svg.querySelectorAll('.kavel-pad').forEach(path => {
+    path.classList.remove('s-available', 's-under-bid', 's-sold', 'is-live', 'dim', 'is-selected');
+    path.style.fill = path.style.opacity = path.style.pointerEvents = path.style.cursor = '';
+    const nr = kavelKoppeling[path.getAttribute('data-path-idx')];
+    const p = nr !== undefined ? propByNr(nr) : null;
+    if (!p) return;
+    path.classList.add('is-live', 's-' + p.status);
+    if (activeFilter && p.status !== activeFilter) path.classList.add('dim');
+    if (p.nr === selectedNr) path.classList.add('is-selected');
+  });
+}
+
+function renderPins() {
+  layer.querySelectorAll('.marker').forEach(el => el.remove());
+  const linked = new Set(Object.values(kavelKoppeling));
   properties.forEach(p => {
-    // Heeft dit kavel een gekoppeld SVG-pad? Dan geen losse pin.
-    if (nrToIdx[p.nr] !== undefined) return;
-    // Geen positie én geen pad-koppeling → overslaan
-    if (!p.pos) return;
-
-    const el = document.createElement('div');
+    if (linked.has(p.nr) || !p.pos) return;
+    if (activeFilter && p.status !== activeFilter) return;
+    const el = document.createElement('button');
     el.className = `marker ${p.status}`;
     el.style.left = p.pos[0] + '%';
     el.style.top  = p.pos[1] + '%';
     el.textContent = p.nr;
-    el.dataset.nr  = p.nr;
-
-    el.addEventListener('mouseenter', e => { if (!editMode) showTooltip(e, p); });
-    el.addEventListener('mousemove',  e => { if (!editMode) moveTooltip(e); });
-    el.addEventListener('mouseleave', ()=> { if (!editMode) hideTooltip(); });
-    el.addEventListener('mousedown',  e => { if (editMode) startDrag(e, el, p); });
-    el.addEventListener('touchstart', e => { if (editMode) startDrag(e, el, p); }, { passive: false });
-
+    el.setAttribute('aria-label', `Kavel ${p.nr}, ${statusLabel(p.status)}`);
+    el.addEventListener('click', e => { e.stopPropagation(); openSheet(p); });
+    if (HAS_HOVER) {
+      el.addEventListener('mouseenter', e => showTooltip(e, p));
+      el.addEventListener('mousemove', moveTooltip);
+      el.addEventListener('mouseleave', hideTooltip);
+    }
     layer.appendChild(el);
   });
-
-  renderKavelPaths();
 }
 
-// ─── Kavel-paden als interactieve elementen ───────────────────────────────────
-function renderKavelPaths() {
-  const svg = document.getElementById('mapSVG');
-  if (!svg) return;
+let showSold = false;   // zonder filter staan verkochte kavels ingeklapt onderaan
 
-  // Verwijder oude labels en reset paden
-  svg.querySelectorAll('.kavel-nr-label').forEach(el => el.remove());
-  svg.querySelectorAll('.kavel-pad').forEach(p => {
-    p.style.fill         = '';
-    p.style.opacity      = '';
-    p.style.pointerEvents = 'none';
-    p.style.cursor       = '';
-  });
+function renderList() {
+  const grid = document.getElementById('lotsGrid');
+  const soldCount = properties.filter(p => p.status === 'sold').length;
+  const list = properties
+    .filter(p => activeFilter ? p.status === activeFilter : (showSold || p.status !== 'sold'))
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.nr - b.nr);
 
-  if (!properties.length) return;
+  const total = properties.length;
+  document.getElementById('lotsCount').textContent = activeFilter
+    ? `${list.length} ${statusLabel(activeFilter).toLowerCase()} van ${total}`
+    : `${total} kavels`;
 
-  const ns     = 'http://www.w3.org/2000/svg';
-  const colors = { available:'#27ae60', 'under-bid':'#e67e22', sold:'#c0392b' };
+  const more = document.getElementById('lotsMore');
+  more.hidden = !!activeFilter || !soldCount;
+  more.textContent = showSold ? 'Verkochte kavels verbergen' : `Toon ook verkochte kavels (${soldCount})`;
 
-  Object.entries(kavelKoppeling).forEach(([idx, nr]) => {
-    const p    = properties.find(q => q.nr === nr);
-    const path = svg.querySelector(`.kavel-pad[data-path-idx="${idx}"]`);
-    if (!p || !path) return;
-
-    // Kleur & interactiviteit
-    path.style.fill         = colors[p.status] || '#aaa';
-    path.style.opacity      = '0.72';
-    path.style.pointerEvents = 'all';
-    path.style.cursor       = 'pointer';
-
-    // Nummer-label centreren op het pad
-    try {
-      const bb   = path.getBBox();
-      const text = document.createElementNS(ns, 'text');
-      text.setAttribute('x', bb.x + bb.width / 2);
-      text.setAttribute('y', bb.y + bb.height / 2);
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('class', 'kavel-nr-label');
-      text.setAttribute('fill', '#fff');
-      text.setAttribute('font-size', '18');
-      text.setAttribute('font-weight', 'bold');
-      text.setAttribute('pointer-events', 'none');
-      text.textContent = nr;
-      svg.appendChild(text);
-    } catch(e) {}
-  });
+  if (!list.length) {
+    grid.innerHTML = `<p class="lots-empty">${total ? 'Geen kavels met deze status.' : 'Nog geen kavels geladen.'}</p>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => {
+    const right = p.status === 'available'
+      ? (p.price ? formatPrice(p.price) : 'Prijs op aanvraag')
+      : statusLabel(p.status);
+    const meta = lotMeta(p);
+    return `<button class="lot ${p.status}" data-nr="${p.nr}" aria-label="Kavel ${p.nr}, ${statusLabel(p.status)}">
+      <span class="lot-nr">${p.nr}</span>
+      <span class="lot-main"><span class="lot-name">${esc(lotTitle(p))}</span>${meta ? `<span class="lot-meta">${esc(meta)}</span>` : ''}</span>
+      <span class="lot-price">${esc(right)}</span>
+    </button>`;
+  }).join('');
 }
 
-// Event-delegation op SVG voor hover-tooltip en touch
-(function() {
-  let hoverPath = null;
+document.getElementById('lotsGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.lot');
+  if (!btn) return;
+  e.stopPropagation();
+  const p = propByNr(+btn.dataset.nr);
+  if (!p) return;
+  focusOnMap(p.nr);
+  openSheet(p);
+});
 
-  function svgPathFromPoint(x, y) {
-    const elements = document.elementsFromPoint(x, y);
-    const el = elements.find(el => el.classList && el.classList.contains('kavel-pad'));
-    if (!el) return null;
-    const idx = el.getAttribute('data-path-idx');
-    const nr  = kavelKoppeling[idx];
-    if (nr === undefined) return null;
-    return { el, p: properties.find(q => q.nr === nr) || null };
-  }
-
-  function poiFromPoint(x, y) {
-    const els = document.elementsFromPoint(x, y);
-    for (const el of els) {
-      const g = el.closest ? el.closest('[data-poi]') : null;
-      if (g) return g;
-    }
-    return null;
-  }
-
-  document.getElementById('mapWrapper').addEventListener('mousemove', function(e) {
-    if (editMode || koppelenMode) return;
-    const hit = svgPathFromPoint(e.clientX, e.clientY);
-    if (hit && hit.p) {
-      if (hoverPath !== hit.el) {
-        if (hoverPath) { hoverPath.style.opacity = '0.72'; }
-        hoverPath = hit.el;
-        hoverPath.style.opacity = '0.92';
-        showTooltip(e, hit.p);
-      }
-      moveTooltip(e);
-      if (!ttSticky && !e.target.closest('.place-marker')) hidePhotoTT();
-    } else {
-      if (hoverPath) { hoverPath.style.opacity = '0.72'; hoverPath = null; }
-      hideTooltip();
-      const poi = poiFromPoint(e.clientX, e.clientY);
-      if (poi) {
-        const poiId = poi.getAttribute('data-poi');
-        const poiData = placeMarkers.find(p => p.id === poiId);
-        if (poiData && !ttSticky) showPhotoTT(e, poiData);
-      } else {
-        if (!ttSticky && !e.target.closest('.place-marker')) hidePhotoTT();
-      }
-    }
-  });
-
-  document.getElementById('mapWrapper').addEventListener('mouseleave', function() {
-    if (hoverPath) { hoverPath.style.opacity = '0.72'; hoverPath = null; }
-    hideTooltip();
-    if (!ttSticky) hidePhotoTT();
-  });
-
-  // Touch: tik op kavel of POI toont tooltip
-  document.getElementById('mapWrapper').addEventListener('touchend', function(e) {
-    if (koppelenMode) return;
-    const t = e.changedTouches[0];
-    const hit = svgPathFromPoint(t.clientX, t.clientY);
-    if (hit && hit.p) {
-      showTooltip(t, hit.p);
-      return;
-    }
-    const poi = poiFromPoint(t.clientX, t.clientY);
-    if (poi) {
-      const poiId = poi.getAttribute('data-poi');
-      const poiData = placeMarkers.find(p => p.id === poiId);
-      if (poiData) { ttSticky = true; showPhotoTT(t, poiData); }
-    }
-  });
-
-  // Click: toggle sticky POI photo
-  document.getElementById('mapWrapper').addEventListener('click', function(e) {
-    if (koppelenMode) return;
-    const poi = poiFromPoint(e.clientX, e.clientY);
-    if (poi) {
-      e.stopPropagation();
-      const poiId = poi.getAttribute('data-poi');
-      const poiData = placeMarkers.find(p => p.id === poiId);
-      if (poiData) {
-        if (ttSticky) { hidePhotoTT(); }
-        else { ttSticky = true; showPhotoTT(e, poiData); }
-      }
-    }
-  });
-})();
-
-// ─── Load from Google Sheet CSV ───────────────────────────────────────────────
-async function loadFromWebhook() {
-  document.getElementById('sheetStatus').textContent = '⏳ Data laden…';
+// Scroll de kaart naar een kavel en laat het vlak even oplichten
+function focusOnMap(nr) {
+  const path = pathForNr(nr);
+  document.querySelector('.map-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!path) return;
   try {
-    const res = await fetch(WEBHOOK_URL);
+    const bb = path.getBBox();
+    const cx = (bb.x + bb.width / 2) / 1672 * mapScroll.scrollWidth;
+    mapScroll.scrollTo({ left: cx - mapScroll.clientWidth / 2, behavior: 'smooth' });
+  } catch (e) {}
+  path.classList.remove('flash'); void path.getBBox(); path.classList.add('flash');
+  setTimeout(() => path.classList.remove('flash'), 2600);
+}
+
+// ─── Filterchips ─────────────────────────────────────────────────────────────
+document.getElementById('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const f = chip.dataset.filter;
+  activeFilter = activeFilter === f ? null : f;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.filter === activeFilter)));
+  document.getElementById('chips').classList.toggle('filtering', !!activeFilter);
+  paintPaths(); renderPins(); renderList();
+});
+
+// ─── Kavelpaneel ─────────────────────────────────────────────────────────────
+const sheet = document.getElementById('sheet');
+const backdrop = document.getElementById('sheetBackdrop');
+
+function openSheet(p) {
+  hideTooltip(); hidePhotoTT();
+  selectedNr = p.nr;
+  paintPaths();
+
+  const rows = [];
+  if (p.type)      rows.push(['Type', p.type]);
+  if (p.persons)   rows.push(['Personen', p.persons]);
+  if (p.situering) rows.push(['Situering', p.situering]);
+  if (p.rendement) rows.push(['Rendement', p.rendement]);
+
+  let price;
+  if (p.status === 'available') price = `<div class="sh-price">${p.price ? formatPrice(p.price) : 'Prijs op aanvraag'}</div>`;
+  else if (p.status === 'under-bid') price = `<div class="sh-price muted">Er ligt een bod op deze kavel</div>`;
+  else price = `<div class="sh-price muted">Deze kavel is verkocht</div>`;
+
+  document.getElementById('sheetBody').innerHTML = `
+    <div class="sh-nr">Kavel ${p.nr}</div>
+    <h2 class="sh-title" id="shTitle">${esc(lotTitle(p))}</h2>
+    <span class="pill ${p.status}">${statusLabel(p.status)}</span>
+    ${price}
+    ${rows.length ? `<div class="sh-rows">${rows.map(([k, v]) => `<div class="sh-row"><span>${k}</span><span>${esc(v)}</span></div>`).join('')}</div>` : '<div style="height:12px"></div>'}
+    <div class="sh-actions">
+      <a class="btn btn-primary" href="${PRIJSLIJST_URL}" target="_blank" rel="noopener">Bekijk prijslijst</a>
+    </div>`;
+  // Op desktop het paneel aan de andere kant zetten dan de kavel, zodat die zichtbaar blijft
+  const path = pathForNr(p.nr);
+  const r = path ? path.getBoundingClientRect() : null;
+  sheet.classList.toggle('left', !!r && (r.left + r.width / 2) > window.innerWidth * 0.6);
+  sheet.classList.add('open');
+  backdrop.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+
+function closeSheet() {
+  if (!sheet.classList.contains('open')) return;
+  sheet.classList.remove('open');
+  backdrop.classList.remove('open');
+  sheet.setAttribute('aria-hidden', 'true');
+  selectedNr = null;
+  paintPaths();
+}
+document.getElementById('sheetClose').addEventListener('click', e => { e.stopPropagation(); closeSheet(); });
+backdrop.addEventListener('click', closeSheet);
+sheet.addEventListener('click', e => e.stopPropagation());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !koppelenMode) { closeSheet(); hidePhotoTT(); } });
+
+// ─── Hover-tooltip (alleen met muis) ─────────────────────────────────────────
+function showTooltip(e, p) {
+  const price = p.status === 'available'
+    ? (p.price ? `<div class="tt-price">${formatPrice(p.price)}</div>` : '')
+    : '';
+  const meta = lotMeta(p);
+  tooltip.innerHTML = `
+    <div class="tt-head"><span class="tt-nr">Kavel ${p.nr}</span><span class="pill ${p.status}">${statusLabel(p.status)}</span></div>
+    <div class="tt-name">${esc(lotTitle(p))}</div>
+    ${meta ? `<div class="tt-hint" style="margin-top:2px">${esc(meta)}</div>` : ''}
+    ${price}
+    <div class="tt-hint">Klik voor details</div>`;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 12;
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + tw + pad > window.innerWidth)  x = e.clientX - tw - 16;
+  if (y + th + pad > window.innerHeight) y = e.clientY - th - 16;
+  tooltip.style.left = Math.max(pad, x) + 'px';
+  tooltip.style.top  = Math.max(pad, y) + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+// ─── Interactie op de kaart (één plek voor muis en aanraking) ────────────────
+function kavelFromTarget(t) {
+  const path = t.closest && t.closest('.kavel-pad.is-live');
+  if (!path) return null;
+  const nr = kavelKoppeling[path.getAttribute('data-path-idx')];
+  return nr !== undefined ? propByNr(nr) : null;
+}
+function poiFromTarget(t) {
+  const g = t.closest && t.closest('[data-poi]');
+  return g ? placeMarkers.find(p => p.id === g.getAttribute('data-poi')) || null : null;
+}
+
+if (HAS_HOVER) {
+  let hovered = null;
+  svg.addEventListener('mousemove', e => {
+    if (koppelenMode) return;
+    const p = kavelFromTarget(e.target);
+    if (p) {
+      if (hovered !== p) { hovered = p; showTooltip(e, p); }
+      moveTooltip(e);
+    } else if (hovered) { hovered = null; hideTooltip(); }
+  });
+  svg.addEventListener('mouseleave', () => { hovered = null; hideTooltip(); });
+  svg.addEventListener('mouseover', e => {
+    if (koppelenMode || ttSticky) return;
+    const poi = poiFromTarget(e.target);
+    if (poi && !_drag) showPhotoTT(e, poi);
+  });
+  svg.addEventListener('mouseout', e => {
+    if (ttSticky) return;
+    if (poiFromTarget(e.target) && !(e.relatedTarget && poiFromTarget(e.relatedTarget))) hidePhotoTT();
+  });
+}
+
+svg.addEventListener('click', e => {
+  if (koppelenMode) return;              // de koppelmodus heeft een eigen klikafhandeling
+  if (_dragMoved) { _dragMoved = false; return; }
+  const poi = poiFromTarget(e.target);
+  if (poi) { e.stopPropagation(); togglePhoto(e, poi); return; }
+  const p = kavelFromTarget(e.target);
+  if (p) { e.stopPropagation(); openSheet(p); }
+});
+
+// Klik buiten kaartelementen sluit panelen
+document.addEventListener('click', () => { hidePhotoTT(); closeSheet(); });
+
+// ─── Laden ───────────────────────────────────────────────────────────────────
+async function loadFromWebhook() {
+  const status = document.getElementById('sheetStatus');
+  const btn = document.getElementById('refreshBtn');
+  status.textContent = 'Beschikbaarheid laden';
+  btn.classList.add('spinning');
+  try {
+    const res = await fetch(WEBHOOK_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
-    if (!Array.isArray(rows)) throw new Error('Onverwacht antwoord van webhook.');
+    if (!Array.isArray(rows)) throw new Error('Onverwacht antwoord van de webhook.');
     const loaded = rows.map(rowToProperty).filter(Boolean);
     if (!loaded.length) throw new Error('Geen kavels gevonden.');
     properties = loaded;
     render();
-    document.getElementById('sheetStatus').textContent =
-      '✓ Gesynchroniseerd — ' + new Date().toLocaleTimeString('nl-NL');
+    document.getElementById('errorBanner').hidden = true;
+    status.textContent = 'Bijgewerkt ' + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   } catch (err) {
-    document.getElementById('sheetStatus').textContent = '❌ Fout: ' + err.message;
     console.error(err);
+    document.getElementById('errorBanner').hidden = false;
+    status.textContent = 'Niet bijgewerkt';
+  } finally {
+    btn.classList.remove('spinning');
   }
 }
 
-// ─── Locatiepins ─────────────────────────────────────────────────────────────
-const SVG = {
-  pool: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M3 10c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0 3-2.5 4.5 0 3 2.5 4.5 0"/><path d="M3 17c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0 3-2.5 4.5 0 3 2.5 4.5 0"/><circle cx="12" cy="4" r="1.5" fill="white" stroke="none"/><path d="M12 5.5v3l2 1.5"/></svg>',
-  mountain: '<svg width="20" height="20" viewBox="0 0 20 20"><circle cx="5" cy="13" r="4" fill="white"/><circle cx="15" cy="13" r="4" fill="white"/><rect x="2" y="6" width="6" height="6" rx="1" fill="white"/><rect x="12" y="6" width="6" height="6" rx="1" fill="white"/><rect x="8" y="8" width="4" height="3" fill="white"/><circle cx="5" cy="13" r="1.8" fill="#1d4a1d"/><circle cx="15" cy="13" r="1.8" fill="#1d4a1d"/></svg>',
-  restaurant: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M3 2v7c0 1.7 1.3 3 3 3v9"/><path d="M4.5 2v8M6 2v8"/><path d="M21 2v19M18 2c0 4.5 3 5.5 3 9v9"/></svg>',
-  home: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V10L12 3l9 7v12H3z"/><rect x="9" y="14" width="6" height="8" rx="0.5"/></svg>',
-};
+// ─── Uitzicht en voorzieningen met foto's ────────────────────────────────────
+const BINOCULARS = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><circle cx="5" cy="13" r="4" fill="white"/><circle cx="15" cy="13" r="4" fill="white"/><rect x="2" y="6" width="6" height="6" rx="1" fill="white"/><rect x="12" y="6" width="6" height="6" rx="1" fill="white"/><rect x="8" y="8" width="4" height="3" fill="white"/><circle cx="5" cy="13" r="1.8" fill="#164631"/><circle cx="15" cy="13" r="1.8" fill="#164631"/></svg>';
 
 const placeMarkers = [
-  { id: 'zwembad',      label: 'Zwembad',    hidden: true,
-    photos: ['https://drive.google.com/thumbnail?id=1n0gNE8Dt2pnDa5R2eKviUmLl0JQL1Dbr&sz=w600',
-             'https://drive.google.com/thumbnail?id=17HPPY6VLK9tzdxRQKcWVHPTYlB2H1n8w&sz=w600'] },
-  { id: 'restaurant',   label: 'Restaurant', hidden: true,
-    photos: ['https://drive.google.com/thumbnail?id=15WbfBda92xiC-EJacYEsnsAXrsV-knZ7&sz=w600',
-             'https://drive.google.com/thumbnail?id=1r873XWswdU6zYfYR5bXOg2qaDMyLRGXC&sz=w600'] },
-  { id: 'bar',          label: 'Bar',        hidden: true,
-    photos: ['https://drive.google.com/thumbnail?id=1og45-iGRBa2Qz9I8pdMS98tQEU8mi3dh&sz=w600',
-             'https://drive.google.com/thumbnail?id=1wbgUpmG93NiWyQB3nkvSUm3l06VHXiwC&sz=w600'] },
-  // Uitzicht markers – one per hoek (W=top, O=bottom, N=right, Z=left)
-  // Uitzicht – centered on each edge (W=top, O=bottom, N=right, Z=left)
-  { id: 'uitzicht-w',  label: 'Uitzicht', icon: SVG.mountain, pos: [50.0, 2.5],
-    photo: 'https://drive.google.com/thumbnail?id=15tKs6aAxYW2VLKAA-ZT4chM9InMGhMOg&sz=w600' },
-  { id: 'uitzicht-o',  label: 'Uitzicht', icon: SVG.mountain, pos: [50.0, 94.0],
-    photos: ['https://drive.google.com/thumbnail?id=1QPijgQ31_GaB8DsdEAeCx3k_Dkw6Kwue&sz=w600',
-             'https://drive.google.com/thumbnail?id=17HPPY6VLK9tzdxRQKcWVHPTYlB2H1n8w&sz=w600'] },
-  { id: 'uitzicht-n',  label: 'Uitzicht', icon: SVG.mountain, pos: [96.0, 50.0],
-    photo: 'https://drive.google.com/thumbnail?id=1DfX92jxqZlpN7LPP7tSEcZjvxx4geoAK&sz=w600' },
-  { id: 'uitzicht-z',  label: 'Uitzicht', icon: SVG.mountain, pos: [2.0,  50.0],
-    photo: 'https://drive.google.com/thumbnail?id=1VEJMDilNz3jYCsmSd_ziSN8W6TH12zne&sz=w600' },
+  { id: 'zwembad',    label: 'Zwembad',    hidden: true,
+    photos: ['https://drive.google.com/thumbnail?id=1n0gNE8Dt2pnDa5R2eKviUmLl0JQL1Dbr&sz=w800',
+             'https://drive.google.com/thumbnail?id=17HPPY6VLK9tzdxRQKcWVHPTYlB2H1n8w&sz=w800'] },
+  { id: 'restaurant', label: 'Restaurant', hidden: true,
+    photos: ['https://drive.google.com/thumbnail?id=15WbfBda92xiC-EJacYEsnsAXrsV-knZ7&sz=w800',
+             'https://drive.google.com/thumbnail?id=1r873XWswdU6zYfYR5bXOg2qaDMyLRGXC&sz=w800'] },
+  { id: 'bar',        label: 'Bar',        hidden: true,
+    photos: ['https://drive.google.com/thumbnail?id=1og45-iGRBa2Qz9I8pdMS98tQEU8mi3dh&sz=w800',
+             'https://drive.google.com/thumbnail?id=1wbgUpmG93NiWyQB3nkvSUm3l06VHXiwC&sz=w800'] },
+  // De kaart staat met het westen boven: boven = west, onder = oost, rechts = noord, links = zuid
+  { id: 'uitzicht-w', label: 'Uitzicht west',  edge: 'top',
+    photos: ['https://drive.google.com/thumbnail?id=15tKs6aAxYW2VLKAA-ZT4chM9InMGhMOg&sz=w800'] },
+  { id: 'uitzicht-o', label: 'Uitzicht oost',  edge: 'bottom',
+    photos: ['https://drive.google.com/thumbnail?id=1QPijgQ31_GaB8DsdEAeCx3k_Dkw6Kwue&sz=w800',
+             'https://drive.google.com/thumbnail?id=17HPPY6VLK9tzdxRQKcWVHPTYlB2H1n8w&sz=w800'] },
+  { id: 'uitzicht-n', label: 'Uitzicht noord', edge: 'right',
+    photos: ['https://drive.google.com/thumbnail?id=1DfX92jxqZlpN7LPP7tSEcZjvxx4geoAK&sz=w800'] },
+  { id: 'uitzicht-z', label: 'Uitzicht zuid',  edge: 'left',
+    photos: ['https://drive.google.com/thumbnail?id=1VEJMDilNz3jYCsmSd_ziSN8W6TH12zne&sz=w800'] },
 ];
 
 const photoTT = document.createElement('div');
 photoTT.className = 'photo-tt';
 document.body.appendChild(photoTT);
 let ttSticky = false;
-
-function _photoList(p) { return p.photos || (p.photo ? [p.photo] : []); }
-
 let _slideTimer = null;
 function _clearSlide() { if (_slideTimer) { clearInterval(_slideTimer); _slideTimer = null; } }
 
 function _renderPhotoTT(p, idx) {
-  const photos = _photoList(p);
-  if (!photos.length) {
-    photoTT.innerHTML = `<div class="pt-label pt-label-only">${p.label}</div>`;
-    return;
-  }
-  const multi = photos.length > 1;
+  const photos = p.photos || [];
   photoTT.innerHTML = `
-    <div style="position:relative">
-      <img src="${photos[idx]}" alt="${p.label}" loading="eager">
-      ${multi ? `<div class="pt-count">${idx + 1} / ${photos.length}</div>` : ''}
-    </div>
-    <div class="pt-label">${p.label}</div>`;
+    ${photos.length ? `<img src="${photos[idx]}" alt="${esc(p.label)}">` : ''}
+    <div class="pt-label"><span>${esc(p.label)}</span>${photos.length > 1 ? `<span class="pt-count">${idx + 1} / ${photos.length}</span>` : ''}</div>`;
 }
-
 function showPhotoTT(e, p) {
   _clearSlide();
-  photoTT._idx = 0;
-  _renderPhotoTT(p, 0);
+  let idx = 0;
+  _renderPhotoTT(p, idx);
+  (p.photos || []).slice(1).forEach(src => { const i = new Image(); i.src = src; });  // vooraf laden
   photoTT.classList.add('visible');
   placePhotoTT(e);
-  const photos = _photoList(p);
-  if (photos.length > 1) {
-    _slideTimer = setInterval(() => {
-      photoTT._idx = (photoTT._idx + 1) % photos.length;
-      _renderPhotoTT(p, photoTT._idx);
-    }, 1200);
+  if ((p.photos || []).length > 1) {
+    _slideTimer = setInterval(() => { idx = (idx + 1) % p.photos.length; _renderPhotoTT(p, idx); }, 2800);
   }
 }
 function placePhotoTT(e) {
-  const vp = window.visualViewport;
-  const vw = vp ? vp.width  : window.innerWidth;
-  const ox = vp ? vp.offsetLeft : 0;
-  const oy = vp ? vp.offsetTop  : 0;
-  const cx = e ? (e.clientX ?? (e.touches ? e.touches[0].clientX : ox + vw / 2)) : ox + vw / 2;
-  const w  = Math.min(520, vw - 16);
-  let lx = cx + 16;
-  if (lx + w > ox + vw - 8) lx = cx - w - 16;
-  if (lx < ox + 8) lx = ox + 8;
-  photoTT.style.left     = lx + 'px';
-  photoTT.style.top      = (oy + 8) + 'px';
+  if (window.innerWidth <= 640) return;   // op mobiel staat het venster vast onderin (css)
+  const w = Math.min(440, window.innerWidth - 24);
+  const cx = e && e.clientX != null ? e.clientX : window.innerWidth / 2;
+  let lx = cx + 18;
+  if (lx + w > window.innerWidth - 12) lx = cx - w - 18;
+  photoTT.style.left = Math.max(12, lx) + 'px';
+  photoTT.style.top  = '12px';
   photoTT.style.maxWidth = w + 'px';
 }
 function hidePhotoTT() { _clearSlide(); photoTT.classList.remove('visible'); ttSticky = false; }
-
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    if (photoTT.classList.contains('visible')) placePhotoTT(null);
-  });
+function togglePhoto(e, p) {
+  if (ttSticky && photoTT.dataset.id === p.id) { hidePhotoTT(); return; }
+  closeSheet();
+  showPhotoTT(e, p);
+  photoTT.dataset.id = p.id;
+  ttSticky = true;
 }
-
-document.addEventListener('click', () => { if (!ttSticky) hidePhotoTT(); });
-
-// ─── Drag system ──────────────────────────────────────────────────────────────
-const _markerPos = JSON.parse(localStorage.getItem('markerPos') || '{}');
-let _drag = null, _dragMoved = false;
-
-function _dragStart(el, id, isHTML, cx, cy) {
-  const wrapper = document.getElementById('mapWrapper');
-  _dragMoved = false;
-  if (isHTML) {
-    _drag = { el, id, isHTML: true,
-      wr: wrapper.getBoundingClientRect(),
-      sx: cx, sy: cy,
-      startL: parseFloat(el.style.left),
-      startT: parseFloat(el.style.top) };
-  } else {
-    const svg = document.getElementById('mapSVG');
-    const pt  = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
-    const sp  = pt.matrixTransform(svg.getScreenCTM().inverse());
-    const m   = (el.getAttribute('transform') || 'translate(0,0)').match(/translate\(([^,]+),([^)]+)\)/);
-    _drag = { el, id, isHTML: false, svg,
-      sx: sp.x, sy: sp.y,
-      startTX: m ? parseFloat(m[1]) : 0,
-      startTY: m ? parseFloat(m[2]) : 0 };
-  }
-  el.classList.add('dragging');
-}
-
-function _dragMove(cx, cy) {
-  if (!_drag) return;
-  if (_drag.isHTML) {
-    const dx = (cx - _drag.sx) / _drag.wr.width  * 100;
-    const dy = (cy - _drag.sy) / _drag.wr.height * 100;
-    if (Math.abs(dx) + Math.abs(dy) > 0.3) _dragMoved = true;
-    _drag.el.style.left = Math.max(0, Math.min(100, _drag.startL + dx)) + '%';
-    _drag.el.style.top  = Math.max(0, Math.min(100, _drag.startT + dy)) + '%';
-  } else {
-    const pt = _drag.svg.createSVGPoint(); pt.x = cx; pt.y = cy;
-    const sp = pt.matrixTransform(_drag.svg.getScreenCTM().inverse());
-    const dx = sp.x - _drag.sx, dy = sp.y - _drag.sy;
-    if (Math.abs(dx) + Math.abs(dy) > 1) _dragMoved = true;
-    _drag.el.setAttribute('transform', `translate(${_drag.startTX+dx},${_drag.startTY+dy})`);
-  }
-}
-
-function _dragEnd() {
-  if (!_drag) return;
-  _drag.el.classList.remove('dragging');
-  if (_dragMoved) {
-    if (_drag.isHTML) {
-      _markerPos[_drag.id] = [parseFloat(_drag.el.style.left), parseFloat(_drag.el.style.top)];
-    } else {
-      const m = (_drag.el.getAttribute('transform') || '').match(/translate\(([^,]+),([^)]+)\)/);
-      if (m) _markerPos['svg-' + _drag.id] = [parseFloat(m[1]), parseFloat(m[2])];
-    }
-    localStorage.setItem('markerPos', JSON.stringify(_markerPos));
-  }
-  _drag = null;
-}
-
-document.addEventListener('mousemove',  e => _dragMove(e.clientX, e.clientY));
-document.addEventListener('mouseup',    () => _dragEnd());
-document.addEventListener('touchmove',  e => { if (_drag) { e.preventDefault(); _dragMove(e.touches[0].clientX, e.touches[0].clientY); }}, {passive:false});
-document.addEventListener('touchend',   () => _dragEnd());
-
-function _attachHTMLDrag(el, id) {
-  if (_markerPos[id]) { el.style.left = _markerPos[id][0] + '%'; el.style.top = _markerPos[id][1] + '%'; }
-  el.style.cursor = 'grab';
-  el.addEventListener('mousedown',  e => { e.stopPropagation(); _dragStart(el, id, true,  e.clientX, e.clientY); });
-  el.addEventListener('touchstart', e => { e.stopPropagation(); _dragStart(el, id, true,  e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
-}
-
-function _attachSVGDrag(group, id) {
-  if (_markerPos['svg-' + id]) {
-    const [tx, ty] = _markerPos['svg-' + id];
-    group.setAttribute('transform', `translate(${tx},${ty})`);
-  }
-  group.style.cursor = 'grab';
-  group.addEventListener('mousedown',  e => { if (koppelenMode || editMode) return; e.stopPropagation(); _dragStart(group, id, false, e.clientX, e.clientY); });
-  group.addEventListener('touchstart', e => { if (koppelenMode || editMode) return; e.stopPropagation(); _dragStart(group, id, false, e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
-}
-// ──────────────────────────────────────────────────────────────────────────────
 
 function renderPlaceMarkers() {
   placeMarkers.forEach(p => {
     if (p.hidden) return;
-    const isUitzicht = p.id.startsWith('uitzicht');
-    const el = document.createElement('div');
-    el.className = 'place-marker' + (p.photo ? ' has-photo' : '') + (isUitzicht ? ' uitzicht-btn' : '');
-    el.innerHTML = `<img class="pm-icon" src="data:image/svg+xml,${encodeURIComponent(p.icon)}" alt=""><span>${p.label}</span>`;
-    el.style.left = p.pos[0] + '%';
-    el.style.top  = p.pos[1] + '%';
+    const el = document.createElement('button');
+    el.className = 'view-pin edge-' + p.edge;
+    el.innerHTML = `${BINOCULARS}<span>${esc(p.label)}</span>`;
+    el.addEventListener('click', e => { e.stopPropagation(); togglePhoto(e, p); });
+    if (HAS_HOVER) {
+      el.addEventListener('mouseenter', e => { if (!ttSticky) showPhotoTT(e, p); });
+      el.addEventListener('mouseleave', () => { if (!ttSticky) hidePhotoTT(); });
+    }
     layer.appendChild(el);
-
-    if (!isUitzicht) _attachHTMLDrag(el, p.id);
-
-    // Hover (skip if dragging)
-    el.addEventListener('mouseenter', e => { if (!ttSticky && !_dragMoved) showPhotoTT(e, p); });
-    el.addEventListener('mousemove',  e => { if (!ttSticky) placePhotoTT(e); });
-    el.addEventListener('mouseleave', ()  => { if (!ttSticky) hidePhotoTT(); });
-
-    // Click/tap: only if not a drag
-    el.addEventListener('click', e => {
-      e.stopPropagation();
-      if (_dragMoved) return;
-      if (ttSticky) { hidePhotoTT(); } else { ttSticky = true; showPhotoTT(e, p); }
-    });
-    el.addEventListener('touchend', e => {
-      e.preventDefault(); e.stopPropagation();
-      if (_dragMoved) return;
-      const t = e.changedTouches[0];
-      if (ttSticky) { hidePhotoTT(); } else { ttSticky = true; showPhotoTT(t, p); }
-    });
   });
 }
-renderPlaceMarkers();
 
-// Wire up SVG label drag + windroos drag after DOM is ready
-requestAnimationFrame(() => {
-  ['restaurant','bar','zwembad'].forEach(id => {
-    const g = document.querySelector(`[data-poi="${id}"]`);
-    if (g) _attachSVGDrag(g, id);
-  });
-  const wr = document.getElementById('windroos');
-  if (wr) {
-    wr.style.pointerEvents = 'all';
+// ─── Verslepen van de labels Restaurant/Bar/Zwembad (alleen beheermodus) ─────
+let _markerPos = {};
+try { _markerPos = JSON.parse(localStorage.getItem('markerPos') || '{}'); } catch (e) {}
+let _drag = null, _dragMoved = false;
+
+function _dragStart(el, id, cx, cy) {
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const m  = (el.getAttribute('transform') || '').match(/translate\(([^,]+),([^)]+)\)/);
+  _dragMoved = false;
+  _drag = { el, id, sx: sp.x, sy: sp.y, tx: m ? +m[1] : 0, ty: m ? +m[2] : 0 };
+}
+function _dragMove(cx, cy) {
+  if (!_drag) return;
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const dx = sp.x - _drag.sx, dy = sp.y - _drag.sy;
+  if (Math.abs(dx) + Math.abs(dy) > 1) _dragMoved = true;
+  _drag.el.setAttribute('transform', `translate(${_drag.tx + dx},${_drag.ty + dy})`);
+}
+function _dragEnd() {
+  if (!_drag) return;
+  if (_dragMoved) {
+    const m = (_drag.el.getAttribute('transform') || '').match(/translate\(([^,]+),([^)]+)\)/);
+    if (m) _markerPos['svg-' + _drag.id] = [+m[1], +m[2]];
+    try { localStorage.setItem('markerPos', JSON.stringify(_markerPos)); } catch (e) {}
   }
-});
+  _drag = null;
+}
 
+['restaurant', 'bar', 'zwembad'].forEach(id => {
+  const g = svg.querySelector(`[data-poi="${id}"]`);
+  if (!g) return;
+  // Een eerder in beheermodus versleepte positie geldt alleen in dat apparaat
+  if (ADMIN && _markerPos['svg-' + id]) g.setAttribute('transform', `translate(${_markerPos['svg-' + id].join(',')})`);
+  if (!ADMIN) return;
+  g.addEventListener('mousedown', e => { if (!koppelenMode) { e.stopPropagation(); _dragStart(g, id, e.clientX, e.clientY); } });
+  g.addEventListener('touchstart', e => { if (!koppelenMode) { e.stopPropagation(); _dragStart(g, id, e.touches[0].clientX, e.touches[0].clientY); } }, { passive: true });
+});
+document.addEventListener('mousemove', e => _dragMove(e.clientX, e.clientY));
+document.addEventListener('mouseup', _dragEnd);
+document.addEventListener('touchmove', e => { if (_drag) { e.preventDefault(); _dragMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+document.addEventListener('touchend', _dragEnd);
+
+// ─── Mobiel: kaart openen op de kavels en veeghint tonen ─────────────────────
+function initMapScroll() {
+  const hint = document.getElementById('mapHint');
+  if (mapScroll.scrollWidth <= mapScroll.clientWidth + 4) { hint.classList.remove('show'); return; }
+  mapScroll.scrollLeft = mapScroll.scrollWidth * 0.62 - mapScroll.clientWidth / 2;
+  hint.classList.add('show');
+  const dismiss = () => { hint.classList.add('gone'); setTimeout(() => hint.classList.remove('show'), 450); };
+  setTimeout(() => mapScroll.addEventListener('scroll', dismiss, { once: true, passive: true }), 300);
+  setTimeout(dismiss, 5000);
+}
+
+renderPlaceMarkers();
+requestAnimationFrame(initMapScroll);
 loadFromWebhook();
 
-// ─── Edit mode ────────────────────────────────────────────────────────────────
-function toggleEdit() {
-  editMode = !editMode;
-  document.body.classList.toggle('edit-mode', editMode);
-  editBtn.textContent = editMode ? '✅ Klaar' : '✏️ Pinnen aanpassen';
-  editBtn.classList.toggle('active', editMode);
-  editBar.classList.toggle('visible', editMode);
-  coordRO.style.display = editMode ? 'block' : 'none';
-  hideTooltip();
-}
-
-function startDrag(e, el, p) {
-  e.preventDefault();
-  hideTooltip();
-
-  const wrapper = document.getElementById('mapWrapper');
-  el.classList.add('dragging');
-
-  function getPos(ev) {
-    const touch = ev.touches ? ev.touches[0] : ev;
-    const rect = wrapper.getBoundingClientRect();
-    const x = Math.min(100, Math.max(0, (touch.clientX - rect.left) / rect.width  * 100));
-    const y = Math.min(100, Math.max(0, (touch.clientY - rect.top)  / rect.height * 100));
-    return [x, y];
-  }
-
-  function onMove(ev) {
-    ev.preventDefault();
-    const [x, y] = getPos(ev);
-    el.style.left = x + '%';
-    el.style.top  = y + '%';
-    p.pos[0] = x;
-    p.pos[1] = y;
-    const txt = `Nr. ${p.nr} → x: ${fmt(x)}%  y: ${fmt(y)}%`;
-    liveCoord.textContent = txt;
-    coordRO.textContent   = txt;
-  }
-
-  function onUp() {
-    el.classList.remove('dragging');
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup',   onUp);
-    document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('touchend',  onUp);
-  }
-
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup',   onUp);
-  document.addEventListener('touchmove', onMove, { passive: false });
-  document.addEventListener('touchend',  onUp);
-}
-
-function copyPositions() {
-  const lines = properties.map(p =>
-    `  { nr:${String(p.nr).padEnd(2)}, pos:[${fmt(p.pos[0])}, ${fmt(p.pos[1])}] },`
-  );
-  const text = '// Posities na handmatige correctie\n' + lines.join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    const msg = document.getElementById('copyMsg');
-    msg.style.display = 'inline';
-    setTimeout(() => msg.style.display = 'none', 2000);
-  });
-}
-
-// ─── Tooltip ──────────────────────────────────────────────────────────────────
-function showTooltip(e, p) {
-  const rows = [];
-  if (p.name)    rows.push(`<div class="tooltip-row"><span class="label">Naam</span><span>${p.name}</span></div>`);
-  if (p.type)    rows.push(`<div class="tooltip-row"><span class="label">Type</span><span>${p.type}</span></div>`);
-  if (p.persons) rows.push(`<div class="tooltip-row"><span class="label">Personen</span><span>${p.persons}</span></div>`);
-  if (p.sqm)     rows.push(`<div class="tooltip-row"><span class="label">Oppervlak</span><span>${p.sqm} m²</span></div>`);
-  if (p.pool)    rows.push(`<div class="tooltip-row"><span class="label">Zwembad</span><span>${p.pool}</span></div>`);
-
-  const priceHtml = p.status === 'under-bid'
-    ? `<div class="tooltip-price" style="color:#f0a050">Onder bod</div>`
-    : p.price ? `<div class="tooltip-price">${formatPrice(p.price)}</div>` : '';
-
-  tooltip.innerHTML = `
-    <div class="tooltip-nr">Nr. ${p.nr}</div>
-    <div class="tooltip-name">${p.name || (p.status === 'sold' ? 'Verkocht' : 'Woning ' + p.nr)}</div>
-    <span class="tooltip-status ${p.status}">${statusLabel(p.status)}</span>
-    ${priceHtml}
-    ${rows.length ? '<hr class="tooltip-divider">' + rows.join('') : ''}
-  `;
-  moveTooltip(e);
-  tooltip.classList.add('visible');
-}
-
-function _tooltipZoom() {
-  const visW = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  tooltip.style.zoom = Math.min(1, (visW - 16) / 280);
-}
-
-function moveTooltip(e) {
-  _tooltipZoom();
-  const vp  = window.visualViewport;
-  const ox  = vp ? vp.offsetLeft : 0;
-  const oy  = vp ? vp.offsetTop  : 0;
-  const sc  = vp ? (vp.scale || 1) : 1;
-  const visW = vp ? vp.width  : window.innerWidth;
-  const visH = vp ? vp.height : window.innerHeight;
-  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight, pad = 12;
-  let x = e.clientX + 16, y = e.clientY + 16;
-  if (x + tw + pad > ox + visW * sc)  x = e.clientX - tw - 16;
-  if (y + th + pad > oy + visH * sc)  y = e.clientY - th - 16;
-  if (x < ox + pad) x = ox + pad;
-  if (y < oy + pad) y = oy + pad;
-  tooltip.style.left = x + 'px';
-  tooltip.style.top  = y + 'px';
-}
-
-function hideTooltip() { tooltip.classList.remove('visible'); }
-
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    if (tooltip.classList.contains('visible')) _tooltipZoom();
-  });
-}
-
-
-// ─── Kavel-pad koppeling ─────────────────────────────────────────────────────
-const KOPPELING_DEFAULT = {"0":53,"1":52,"2":51,"3":48,"4":32,"5":33,"6":34,"7":35,"8":36,"9":37,"11":38,"12":39,"13":40,"14":41,"15":42,"16":43,"17":44,"18":45,"19":46,"21":1,"22":2,"23":3,"24":4,"25":5,"26":6,"27":7,"28":8,"29":9,"30":10,"31":11,"32":12,"33":13,"34":27,"35":28,"36":26,"37":25,"38":24,"39":23,"40":22,"41":21,"42":20,"43":19,"44":18,"46":17,"47":16,"48":15,"49":14,"50":47,"51":29,"52":30,"53":31,"54":50,"55":49};
-// Gebruik lokaal opgeslagen versie als die bestaat (voor aanpassingen via koppelmodus),
-// anders de ingebakken standaard.
-let kavelKoppeling = JSON.parse(localStorage.getItem('kavelKoppeling') || JSON.stringify(KOPPELING_DEFAULT));
-// { "path-idx": kavelnummer }
-
+// ─── Koppelmodus (beheer): kaartvlakken aan kavelnummers koppelen ───────────
 function saveKoppeling() {
-  localStorage.setItem('kavelKoppeling', JSON.stringify(kavelKoppeling));
-  const n = Object.keys(kavelKoppeling).length;
+  try { localStorage.setItem('kavelKoppeling', JSON.stringify(kavelKoppeling)); } catch (e) {}
   const prog = document.getElementById('koppelProgress');
-  if (prog) prog.textContent = n + '/56 gekoppeld';
+  if (prog) prog.textContent = Object.keys(kavelKoppeling).length + '/56 gekoppeld';
 }
 
-function updateKavelPadColors() {
-  renderKavelPaths();
-}
-
-// ── Koppel-panel ──────────────────────────────────────────────────────────────
-let koppelenMode   = false;
-let selectedPath   = null;
+let selectedPath = null;
 
 function toggleKoppelen() {
   koppelenMode = !koppelenMode;
-  const btn   = document.getElementById('koppelenBtn');
-  const panel = document.getElementById('koppelPanel');
-  const svg   = document.getElementById('mapSVG');
-  const ml    = document.getElementById('markersLayer');
-
-  btn.textContent = koppelenMode ? '✅ Stoppen' : '🔗 Kavels koppelen';
-  btn.classList.toggle('active', koppelenMode);
-  panel.style.display = koppelenMode ? 'flex' : 'none';
+  if (koppelenMode && kavelKoppeling === KOPPELING_DEFAULT) kavelKoppeling = { ...KOPPELING_DEFAULT };
+  const btn = document.getElementById('koppelenBtn');
+  btn.textContent = koppelenMode ? 'Koppelen stoppen' : 'Kavels koppelen';
+  document.getElementById('koppelPanel').style.display = koppelenMode ? 'flex' : 'none';
   svg.classList.toggle('koppelen-mode', koppelenMode);
-  ml.classList.toggle('koppelen-door', koppelenMode);
-
-  if (!koppelenMode) {
-    deselectPath();
-    updateKavelPadColors(); // herstelt pointer-events per pad
-  } else {
-    // Zet ALLE kavel-paden klikbaar via inline style —
-    // overschrijft de inline pointer-events:none die renderKavelPaths zet
-    svg.querySelectorAll('.kavel-pad').forEach(p => {
-      p.style.pointerEvents = 'all';
-      p.style.cursor = 'pointer';
-    });
-    refreshKoppelHighlights();
-    saveKoppeling();
-  }
+  layer.classList.toggle('koppelen-door', koppelenMode);
+  closeSheet(); hideTooltip();
+  if (!koppelenMode) { deselectPath(); render(); }
+  else { refreshKoppelHighlights(); saveKoppeling(); }
 }
 
 function refreshKoppelHighlights() {
-  const svg = document.getElementById('mapSVG');
+  const colors = { available: '#86c497', 'under-bid': '#ecb563', sold: '#d9968a' };
   const ongekoppeld = [];
   svg.querySelectorAll('.kavel-pad').forEach(p => {
     const idx = p.getAttribute('data-path-idx');
     const nr  = kavelKoppeling[idx];
     if (nr !== undefined) {
-      const colors = { available:'#27ae60', 'under-bid':'#e67e22', sold:'#c0392b' };
-      const prop = properties.find(q => q.nr === nr);
-      p.style.fill    = prop ? (colors[prop.status] || '#888') : '#888';
-      p.style.opacity = '0.72';
+      const prop = propByNr(nr);
+      p.style.fill = prop ? colors[prop.status] : '#888';
+      p.style.opacity = '1';
     } else {
-      p.style.fill    = 'rgba(80,130,255,0.38)';
+      p.style.fill = 'rgba(80,130,255,0.38)';
       p.style.opacity = '1';
       ongekoppeld.push(idx);
     }
   });
-  const n = Object.keys(kavelKoppeling).length;
-  const prog = document.getElementById('koppelProgress');
-  if (prog) prog.textContent = n + '/56 gekoppeld';
-
-  // Toon lijst van ongekoppelde paden als knoppen
+  saveKoppeling();
   const el = document.getElementById('koppelOngekoppeld');
-  if (el && ongekoppeld.length) {
-    el.innerHTML = 'Niet gekoppeld — klik om te selecteren:<br>' +
-      ongekoppeld.map(idx =>
-        `<button onclick="selectPathByIdx('${idx}')" style="
-          margin:2px;padding:3px 7px;border-radius:4px;border:1px solid #3a5068;
-          background:#0f1c27;color:#7aacdd;cursor:pointer;font-size:.78rem">
-          Pad ${idx}
-        </button>`
-      ).join('');
-  } else if (el) {
-    el.innerHTML = '';
-  }
+  el.innerHTML = ongekoppeld.length
+    ? 'Niet gekoppeld, klik om te selecteren:<br>' + ongekoppeld.map(idx =>
+        `<button onclick="selectPathByIdx('${idx}')" style="margin:2px;padding:3px 7px;border-radius:4px;border:1px solid #3a5068;background:#0f1c27;color:#7aacdd;cursor:pointer;font-size:.78rem">Pad ${idx}</button>`).join('')
+    : '';
 }
 
-function selectPathByIdx(idx) {
-  const svg  = document.getElementById('mapSVG');
-  const path = svg.querySelector(`.kavel-pad[data-path-idx="${idx}"]`);
-  if (!path) return;
+function selectPath(path) {
   if (selectedPath) selectedPath.classList.remove('kavel-selected');
   selectedPath = path;
   path.classList.add('kavel-selected');
-  const current = kavelKoppeling[idx];
-  document.getElementById('koppelPathInfo').textContent =
-    `Pad #${idx}${current !== undefined ? ' → kavel ' + current : ''}`;
-  const inp = document.getElementById('koppelInput');
-  inp.value = current !== undefined ? current : '';
-  inp.focus();
-  // Scroll pad in beeld
-  path.scrollIntoView({ behavior:'smooth', block:'center' });
-}
-
-function deselectPath() {
-  if (selectedPath) {
-    selectedPath.classList.remove('kavel-selected');
-    selectedPath = null;
-  }
-  document.getElementById('koppelPathInfo').textContent = 'Klik op een kavel-vlak';
-  document.getElementById('koppelInput').value = '';
-}
-
-// Klik op kavel-pad
-document.addEventListener('click', function(e) {
-  if (!koppelenMode) return;
-  const path = e.target.closest('.kavel-pad');
-  if (!path) return;
-  e.stopPropagation();
-
-  // Deselecteer vorige
-  if (selectedPath) selectedPath.classList.remove('kavel-selected');
-  selectedPath = path;
-  path.classList.add('kavel-selected');
-
-  const idx  = path.getAttribute('data-path-idx');
+  const idx = path.getAttribute('data-path-idx');
   const current = kavelKoppeling[idx];
   document.getElementById('koppelPathInfo').textContent = `Pad #${idx}${current !== undefined ? ' → kavel ' + current : ''}`;
   const inp = document.getElementById('koppelInput');
   inp.value = current !== undefined ? current : '';
   inp.focus();
+}
+function selectPathByIdx(idx) {
+  const path = svg.querySelector(`.kavel-pad[data-path-idx="${idx}"]`);
+  if (path) { selectPath(path); path.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); }
+}
+function deselectPath() {
+  if (selectedPath) selectedPath.classList.remove('kavel-selected');
+  selectedPath = null;
+  document.getElementById('koppelPathInfo').textContent = 'Klik op een kavel-vlak';
+  document.getElementById('koppelInput').value = '';
+}
+svg.addEventListener('click', e => {
+  if (!koppelenMode) return;
+  const path = e.target.closest('.kavel-pad');
+  if (!path) return;
+  e.stopPropagation();
+  selectPath(path);
 });
 
 function koppelOpslaan() {
   if (!selectedPath) return;
-  const idx   = selectedPath.getAttribute('data-path-idx');
-  const val   = document.getElementById('koppelInput').value.trim();
-
-  if (val === '') {
-    delete kavelKoppeling[idx];
-  } else {
+  const idx = selectedPath.getAttribute('data-path-idx');
+  const val = document.getElementById('koppelInput').value.trim();
+  if (val === '') delete kavelKoppeling[idx];
+  else {
     const nr = parseInt(val);
     if (isNaN(nr) || nr < 1) return;
-    // Verwijder eventuele bestaande koppeling voor dit nr
-    Object.keys(kavelKoppeling).forEach(k => {
-      if (kavelKoppeling[k] === nr) delete kavelKoppeling[k];
-    });
+    Object.keys(kavelKoppeling).forEach(k => { if (kavelKoppeling[k] === nr) delete kavelKoppeling[k]; });
     kavelKoppeling[idx] = nr;
   }
-  saveKoppeling();
   refreshKoppelHighlights();
   deselectPath();
 }
-
 function koppelVerwijderen() {
   if (!selectedPath) return;
-  const idx = selectedPath.getAttribute('data-path-idx');
-  delete kavelKoppeling[idx];
-  saveKoppeling();
+  delete kavelKoppeling[selectedPath.getAttribute('data-path-idx')];
   refreshKoppelHighlights();
   deselectPath();
 }
-
-// Enter = opslaan
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', e => {
   if (!koppelenMode) return;
   if (e.key === 'Enter') koppelOpslaan();
   if (e.key === 'Escape') deselectPath();
 });
-
 function kopieerKoppeling() {
-  const text = JSON.stringify(kavelKoppeling);
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(JSON.stringify(kavelKoppeling)).then(() => {
     const msg = document.getElementById('kopieMsg');
     msg.style.display = 'block';
     setTimeout(() => msg.style.display = 'none', 2000);
   });
 }
-
-// Laad opgeslagen koppeling bij start
-window.addEventListener('load', () => {
-  const n = Object.keys(kavelKoppeling).length;
-  if (n > 0) {
-    const prog = document.getElementById('koppelProgress');
-    if (prog) prog.textContent = n + '/56 gekoppeld';
-    setTimeout(updateKavelPadColors, 300);
-  }
-});
-
 </script>
 
-<div id="koppelPanel" style="
+<div id="koppelPanel" onclick="event.stopPropagation()" style="
   display:none; position:fixed; bottom:24px; right:24px; z-index:1000;
   background:#1e2d3a; border:1px solid #3a5068; border-radius:12px;
-  padding:16px 20px; flex-direction:column; gap:10px;
-  box-shadow:0 4px 24px rgba(0,0,0,.5); min-width:220px; font-size:.9rem; color:#eee;">
-  <div style="font-weight:700;color:#7aacdd">🔗 Koppelmodus</div>
+  padding:16px 20px; flex-direction:column; gap:10px; max-height:70vh; overflow-y:auto;
+  box-shadow:0 4px 24px rgba(0,0,0,.5); min-width:220px; max-width:320px; font-size:.9rem; color:#eee;">
+  <div style="font-weight:700;color:#7aacdd">Koppelmodus</div>
   <div id="koppelPathInfo" style="color:#aac4e4;font-size:.82rem">Klik op een kavel-vlak</div>
-  <input id="koppelInput" type="number" min="1" max="99" placeholder="Kavelnummer…"
-    style="padding:7px 10px;border-radius:6px;border:1px solid #3a5068;
-           background:#0f1c27;color:#fff;font-size:.9rem;width:100%">
+  <input id="koppelInput" type="number" min="1" max="99" placeholder="Kavelnummer"
+    style="padding:7px 10px;border-radius:6px;border:1px solid #3a5068;background:#0f1c27;color:#fff;font-size:.9rem;width:100%">
   <div style="display:flex;gap:8px">
-    <button onclick="koppelOpslaan()" style="
-      flex:1;padding:7px;border-radius:6px;border:none;
-      background:#27ae60;color:#fff;font-weight:600;cursor:pointer">
-      ✓ Opslaan
-    </button>
-    <button onclick="koppelVerwijderen()" style="
-      padding:7px 10px;border-radius:6px;border:none;
-      background:#c0392b;color:#fff;cursor:pointer">
-      ✕
-    </button>
+    <button onclick="koppelOpslaan()" style="flex:1;padding:7px;border-radius:6px;border:none;background:#27ae60;color:#fff;font-weight:600;cursor:pointer">Opslaan</button>
+    <button onclick="koppelVerwijderen()" aria-label="Koppeling verwijderen" style="padding:7px 10px;border-radius:6px;border:none;background:#c0392b;color:#fff;cursor:pointer">✕</button>
   </div>
   <div id="koppelProgress" style="color:#aac4e4;font-size:.8rem;text-align:center"></div>
   <div id="koppelOngekoppeld" style="margin-top:4px;font-size:.78rem;color:#aac4e4"></div>
-  <button onclick="kopieerKoppeling()" style="
-    margin-top:6px;width:100%;padding:7px;border-radius:6px;border:none;
-    background:#2c4a5e;color:#fff;cursor:pointer;font-size:.82rem">
-    📋 Kopieer koppeling
-  </button>
-  <span id="kopieMsg" style="display:none;color:#a8e6b4;font-size:.78rem;text-align:center">✓ Gekopieerd!</span>
+  <button onclick="kopieerKoppeling()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:none;background:#2c4a5e;color:#fff;cursor:pointer;font-size:.82rem">Kopieer koppeling</button>
+  <span id="kopieMsg" style="display:none;color:#a8e6b4;font-size:.78rem;text-align:center">Gekopieerd</span>
 </div>
 
 </body>
